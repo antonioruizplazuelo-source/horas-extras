@@ -1,0 +1,10 @@
+{
+  "version": "1.1.3",
+  "fecha": "2026-06-29",
+  "cambios": [
+    "Botón «Instalar» dentro de la app (PC y Android).",
+    "Instalación corregida en Android: ya aparece «Instalar app» y sin barra del navegador.",
+    "La firma de abajo gira al pulsarla.",
+    "Mejoras en el cierre de la app."
+  ]
+}
