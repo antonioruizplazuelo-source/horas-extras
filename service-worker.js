@@ -3,7 +3,7 @@
    - HTML (navegación) y version.json: RED primero (para detectar versiones nuevas), con copia en caché de respaldo.
    - Resto de recursos (iconos, etc.): caché primero.
    El nombre de caché lleva versión: al cambiarla se limpia lo viejo. */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'horas-extras-' + VERSION;
 const ASSETS = ['.', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 

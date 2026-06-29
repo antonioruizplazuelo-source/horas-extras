@@ -1,8 +1,9 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.4",
   "fecha": "2026-06-29",
   "cambios": [
-    "Las fotos y los PDF se ven dentro de la app (sin descargarlos).",
-    "Mejoras en el visor de archivos."
+    "Arreglado el aviso de actualización: ahora detecta bien las versiones nuevas y se actualiza de verdad.",
+    "Al pulsar «Actualizar ahora» se limpia la caché y se recarga la versión nueva.",
+    "Notas con título y vista completa (de la versión anterior)."
   ]
 }
