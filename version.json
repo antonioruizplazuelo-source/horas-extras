@@ -1,10 +1,8 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "fecha": "2026-06-29",
   "cambios": [
-    "Nuevo apartado «Notas y archivos»: guarda notas de texto y fotos/PDF/documentos con descripción.",
-    "Notas y archivos se sincronizan en la nube y en las copias locales, igual que los registros.",
-    "La firma de abajo ahora rebota bien cada vez que la pulsas.",
-    "Ayuda actualizada."
+    "Las fotos y los PDF se ven dentro de la app (sin descargarlos).",
+    "Mejoras en el visor de archivos."
   ]
 }
