@@ -1,0 +1,11 @@
+{
+  "version": "1.1.1",
+  "fecha": "2026-06-29",
+  "cambios": [
+    "Copia en la nube más fiable: la sesión se mantiene al abrir y sincroniza sola.",
+    "Sincroniza entre dispositivos al abrir y al volver a la app.",
+    "Avisos en rojo: icono de nube con aspa si falla, y botones que parpadean cuando falta guardar.",
+    "Ver un registro completo (solo lectura) tocando la tarjeta o el ojo en la tabla.",
+    "Aviso elegante cuando hay una versión nueva de la app."
+  ]
+}
