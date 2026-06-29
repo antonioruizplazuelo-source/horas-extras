@@ -1,10 +1,9 @@
 {
-  "version": "1.1.5",
+  "version": "1.1.6",
   "fecha": "2026-06-29",
   "cambios": [
-    "La firma de abajo ahora rebota (boing) al pulsarla.",
-    "Campos del formulario mejor definidos y más fáciles de ver.",
-    "Se muestra la versión instalada en Ajustes.",
-    "Ajustes en el cierre de la app."
+    "Firma con rebote más vistoso al pulsarla.",
+    "Ayuda actualizada (instalar en PC y Android).",
+    "Versión instalada visible en Ajustes."
   ]
 }
