@@ -1,5 +1,5 @@
 {
-  "version": "1.10.0",
+  "version": "1.10.2",
   "fecha": "2026-06-30",
   "cambios": [
     "Personalización: arreglado el color de tema 'Grafito' (y 'Morado', que tenía el mismo fallo) — antes no aplicaba ningún cambio.",
@@ -15,6 +15,8 @@
     "Arreglado: la pestaña Nómina tenía un margen duplicado que la descuadraba en móvil (sobre todo en vertical) y podía dejar toda la app con scroll horizontal al cambiar de pestaña.",
     "Nómina: las horas extra ya no se cuentan por mes natural a la fuerza — ahora eliges un rango Desde/Hasta (por si tu nómina solo paga unos días o semanas).",
     "Nómina + IA: al analizar la foto de tu nómina, la app compara lo que te pagaron de horas extra y de guardia con lo calculado, y te dice si coincide o si te falta/sobra dinero.",
+    "Arreglado de raíz el descuadre en móvil vertical: la barra de pestañas (Registros/Resumen/Nómina/Notas/Ajustes) no cabía en pantallas estrechas y empujaba TODA la app hacia un lado (incluida la ventana de Personalización). Ahora esa barra se desliza ella sola si hace falta, sin mover el resto.",
+    "Arreglado: los campos Desde/Hasta de Nómina también desbordaban un poco en móvil estrecho.",
     "Nueva pestaña 'Nómina': elige un mes, indica cuántas semanas/días/meses hubo de cada concepto (guardia, retén, festivos, pluses...) y la app calcula el total que deberías cobrar.",
     "Puedes apuntar el importe real de tu nómina y ver al instante la diferencia con lo calculado.",
     "Nuevo en Ajustes: 'Conceptos de nómina' (guardia, retén, festivos, plus asistencia, nocturnidad, complementos...) con importe y periodicidad editables, y puedes añadir o quitar los que necesites.",
