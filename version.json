@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.9.1",
   "fecha": "2026-06-30",
   "cambios": [
     "Personalización: arreglado el color de tema 'Grafito' (y 'Morado', que tenía el mismo fallo) — antes no aplicaba ningún cambio.",
@@ -11,6 +11,7 @@
     "Ayuda actualizada con una nueva sección que explica Conceptos de nómina y la pestaña Nómina.",
     "Nuevo en Ajustes: 'Claves de IA' para guardar tus claves de Anthropic o Gemini (puedes añadir varias).",
     "Nuevo en Nómina: 'Analizar nómina con IA' — sube una foto de tu nómina y la IA te explica cada concepto (devengos y deducciones) en lenguaje sencillo, y puedes aplicar lo encontrado directamente a tus Conceptos de nómina.",
+    "Arreglado: el análisis con IA (Anthropic) daba error porque el modelo usado ya no existía; actualizado a uno vigente.",
     "Nueva pestaña 'Nómina': elige un mes, indica cuántas semanas/días/meses hubo de cada concepto (guardia, retén, festivos, pluses...) y la app calcula el total que deberías cobrar.",
     "Puedes apuntar el importe real de tu nómina y ver al instante la diferencia con lo calculado.",
     "Nuevo en Ajustes: 'Conceptos de nómina' (guardia, retén, festivos, plus asistencia, nocturnidad, complementos...) con importe y periodicidad editables, y puedes añadir o quitar los que necesites.",
