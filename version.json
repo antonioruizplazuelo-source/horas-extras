@@ -1,9 +1,10 @@
 {
-  "version": "1.2.4",
-  "fecha": "2026-06-29",
+  "version": "1.4.0",
+  "fecha": "2026-06-30",
   "cambios": [
-    "Arreglado el aviso de actualización: ahora detecta bien las versiones nuevas y se actualiza de verdad.",
-    "Al pulsar «Actualizar ahora» se limpia la caché y se recarga la versión nueva.",
-    "Notas con título y vista completa (de la versión anterior)."
+    "Los botones seleccionables ahora quedan resaltados aunque no pases el ratón por encima.",
+    "Más colores para el tema y para los controles.",
+    "Más fuentes, incluida una ligada (manuscrita), redondeadas y de revista.",
+    "Nuevo: cambiar el tamaño y el color del texto desde Personalización."
   ]
 }
