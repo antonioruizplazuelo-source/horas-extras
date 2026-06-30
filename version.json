@@ -1,10 +1,19 @@
 {
-  "version": "1.4.0",
+  "version": "1.9.0",
   "fecha": "2026-06-30",
   "cambios": [
-    "Los botones seleccionables ahora quedan resaltados aunque no pases el ratón por encima.",
-    "Más colores para el tema y para los controles.",
-    "Más fuentes, incluida una ligada (manuscrita), redondeadas y de revista.",
-    "Nuevo: cambiar el tamaño y el color del texto desde Personalización."
+    "Personalización: arreglado el color de tema 'Grafito' (y 'Morado', que tenía el mismo fallo) — antes no aplicaba ningún cambio.",
+    "Personalización: el color del texto ahora también cambia los títulos y datos destacados, no solo el texto base.",
+    "Personalización: más colores para tema, controles y texto (Rojo, Dorado, Lima, Turquesa, y Morado/Rojo para el texto).",
+    "Personalización: nuevos botones 'Por defecto' y 'Cancelar' en la ventana de personalización.",
+    "Personalización: la fuente elegida ahora se aplica también a los botones y pestañas (Registros, Nómina, Nuevo registro, Guardar, etc.), antes solo cambiaba el texto normal.",
+    "Nómina: el Total esperado ahora suma también las horas extra que ya tienes registradas ese mes (con tu tarifa), no solo los conceptos fijos.",
+    "Ayuda actualizada con una nueva sección que explica Conceptos de nómina y la pestaña Nómina.",
+    "Nuevo en Ajustes: 'Claves de IA' para guardar tus claves de Anthropic o Gemini (puedes añadir varias).",
+    "Nuevo en Nómina: 'Analizar nómina con IA' — sube una foto de tu nómina y la IA te explica cada concepto (devengos y deducciones) en lenguaje sencillo, y puedes aplicar lo encontrado directamente a tus Conceptos de nómina.",
+    "Nueva pestaña 'Nómina': elige un mes, indica cuántas semanas/días/meses hubo de cada concepto (guardia, retén, festivos, pluses...) y la app calcula el total que deberías cobrar.",
+    "Puedes apuntar el importe real de tu nómina y ver al instante la diferencia con lo calculado.",
+    "Nuevo en Ajustes: 'Conceptos de nómina' (guardia, retén, festivos, plus asistencia, nocturnidad, complementos...) con importe y periodicidad editables, y puedes añadir o quitar los que necesites.",
+    "Estos conceptos se guardan igual que el resto de tus datos, así que entran en la copia local y en la nube."
   ]
 }
