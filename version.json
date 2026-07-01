@@ -1,6 +1,6 @@
 {
-  "version": "1.11.0",
-  "fecha": "2026-06-30",
+  "version": "1.12.0",
+  "fecha": "2026-07-01",
   "cambios": [
     "Personalización: arreglado el color de tema 'Grafito' (y 'Morado', que tenía el mismo fallo) — antes no aplicaba ningún cambio.",
     "Personalización: el color del texto ahora también cambia los títulos y datos destacados, no solo el texto base.",
@@ -18,6 +18,7 @@
     "Arreglado de raíz el descuadre en móvil vertical: la barra de pestañas (Registros/Resumen/Nómina/Notas/Ajustes) no cabía en pantallas estrechas y empujaba TODA la app hacia un lado (incluida la ventana de Personalización). Ahora esa barra se desliza ella sola si hace falta, sin mover el resto.",
     "Arreglado: los campos Desde/Hasta de Nómina también desbordaban un poco en móvil estrecho.",
     "Nómina: nuevo selector 'O elige una semana completa' que rellena Desde/Hasta solo (con el rango de días de esa semana), sin tener que escribirlas a mano.",
+    "Nómina: los cambios ya no se sincronizan en la nube uno a uno. Ahora puedes editar con calma todos los valores del mes (conceptos, importe real...) y cuando termines pulsas 'Guardar nómina'. Si te arrepientes, 'Cancelar cambios' deja todo como estaba antes de empezar.",
     "Toda la app: al entrar en una casilla numérica (importes, cantidades, tarifa...) se selecciona todo el contenido, así que solo tienes que escribir encima en vez de borrar antes.",
     "Nueva pestaña 'Nómina': elige un mes, indica cuántas semanas/días/meses hubo de cada concepto (guardia, retén, festivos, pluses...) y la app calcula el total que deberías cobrar.",
     "Puedes apuntar el importe real de tu nómina y ver al instante la diferencia con lo calculado.",
