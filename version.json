@@ -1,7 +1,8 @@
 {
-  "version": "1.12.0",
+  "version": "1.14.0",
   "fecha": "2026-07-01",
   "cambios": [
+    "Arreglado: la app no se podía instalar como PWA en Android (barra de Chrome siempre visible). El HTML de la app no tenía el enlace al manifest después de desempaquetar el bundle — Chrome perdía el manifest y ya no reconocía la app como instalable. Ahora el manifest está en el HTML correcto y Chrome puede ofrecer la instalación nativa.",
     "Personalización: arreglado el color de tema 'Grafito' (y 'Morado', que tenía el mismo fallo) — antes no aplicaba ningún cambio.",
     "Personalización: el color del texto ahora también cambia los títulos y datos destacados, no solo el texto base.",
     "Personalización: más colores para tema, controles y texto (Rojo, Dorado, Lima, Turquesa, y Morado/Rojo para el texto).",
