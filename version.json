@@ -1,7 +1,10 @@
 {
-  "version": "1.16.0",
+  "version": "1.17.0",
   "fecha": "2026-07-02",
   "cambios": [
+    "Resumen y cobro: el modo 'Por rango de días' y 'Varias semanas' ya funcionan correctamente (estaban vacíos por un error de anidamiento en la plantilla).",
+    "Resumen y cobro: el bloque Desglose nómina estimada ahora muestra Total bruto, deducción IRPF y Total neto estimado. El porcentaje de retención (por defecto 18,62%) es editable en Ajustes → Cobro y correo.",
+    "Ajustes → Cobro y correo: nuevo campo 'Retención IRPF (%)' para ajustar tu porcentaje real.",
     "Resumen y cobro: nuevo bloque Desglose nómina estimada con todas las líneas de tu nómina calculadas para el periodo elegido (horas extra × tarifa, festivos, y cada concepto de nómina según si es por semana, por hora o por mes).",
     "Resumen y cobro: nuevo botón Varias semanas que permite combinar semanas sueltas (marca/desmarca cada semana como chips) para calcular el total de varias semanas no consecutivas.",
     "Registros ordenados de menor a mayor fecha (el más antiguo primero) en tarjetas, tabla y Resumen y cobro.",
