@@ -1,7 +1,9 @@
 {
-  "version": "1.17.0",
+  "version": "1.17.1",
   "fecha": "2026-07-02",
   "cambios": [
+    "Arreglado: las pestañas Nómina, Notas y Ajustes aparecían completamente en blanco. El bloque de Resumen y cobro no se cerraba correctamente en la plantilla, haciendo que todo lo que venía después quedara oculto cuando la pestaña activa no era Resumen.",
+    "Arreglado: si el perfil de usuario no tenía el campo 'opts' (datos de versiones muy antiguas), la app se bloqueaba en todas las pestañas. Ahora se gestiona con un valor por defecto sin romper nada.",
     "Resumen y cobro: el modo 'Por rango de días' y 'Varias semanas' ya funcionan correctamente (estaban vacíos por un error de anidamiento en la plantilla).",
     "Resumen y cobro: el bloque Desglose nómina estimada ahora muestra Total bruto, deducción IRPF y Total neto estimado. El porcentaje de retención (por defecto 18,62%) es editable en Ajustes → Cobro y correo.",
     "Ajustes → Cobro y correo: nuevo campo 'Retención IRPF (%)' para ajustar tu porcentaje real.",
