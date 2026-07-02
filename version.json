@@ -1,7 +1,13 @@
 {
-  "version": "1.14.0",
-  "fecha": "2026-07-01",
+  "version": "1.16.0",
+  "fecha": "2026-07-02",
   "cambios": [
+    "Resumen y cobro: nuevo bloque Desglose nómina estimada con todas las líneas de tu nómina calculadas para el periodo elegido (horas extra × tarifa, festivos, y cada concepto de nómina según si es por semana, por hora o por mes).",
+    "Resumen y cobro: nuevo botón Varias semanas que permite combinar semanas sueltas (marca/desmarca cada semana como chips) para calcular el total de varias semanas no consecutivas.",
+    "Registros ordenados de menor a mayor fecha (el más antiguo primero) en tarjetas, tabla y Resumen y cobro.",
+    "Tabla de registros: columna Plus aplic. (horas con plus de guardia/noche ya aplicado) a la derecha de Guardia; columna Fest. (✓ o —). Las tarjetas también muestran la etiqueta Plus aplic.",
+    "Nuevo en Ajustes: campo Importe día festivo (€) para cambiar los 60 € del festivo si tu convenio varía.",
+    "Campo Festivo en registros: marca si el turno cayó en día festivo. El importe del festivo (60 € por defecto, editable en Ajustes → Cobro y correo) se suma al importe de Resumen y cobro. También aparece como etiqueta en las tarjetas y columna en la tabla.",
     "Arreglado: la app no se podía instalar como PWA en Android (barra de Chrome siempre visible). El HTML de la app no tenía el enlace al manifest después de desempaquetar el bundle — Chrome perdía el manifest y ya no reconocía la app como instalable. Ahora el manifest está en el HTML correcto y Chrome puede ofrecer la instalación nativa.",
     "Personalización: arreglado el color de tema 'Grafito' (y 'Morado', que tenía el mismo fallo) — antes no aplicaba ningún cambio.",
     "Personalización: el color del texto ahora también cambia los títulos y datos destacados, no solo el texto base.",
