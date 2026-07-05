@@ -3,9 +3,9 @@
    - HTML (navegación) y version.json: RED primero (para detectar versiones nuevas), con copia en caché de respaldo.
    - Resto de recursos (iconos, etc.): caché primero.
    El nombre de caché lleva versión: al cambiarla se limpia lo viejo. */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = 'horas-extras-' + VERSION;
-const ASSETS = ['.', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const ASSETS = ['.', 'index.html', 'calendario.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS).catch(() => {})).then(() => self.skipWaiting()));

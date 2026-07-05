@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calendario Laboral Turnos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            
+            /* Estados */
+            --vacaciones: #10b981;
+            --exceso: #f59e0b;
+            --baja: #ef4444;
+            --permiso: #a855f7;
+            --festivo-color: #f97316;
+            
+            /* Festivos fondos */
+            --fest-nac: #fee2e2;
+            --fest-nac-text: #991b1b;
+            --fest-prov: #dbeafe;
+            --fest-prov-text: #1e40af;
+            --fest-loc: #ccfbf1;
+            --fest-loc-text: #115e59;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 15px; 
+            position: relative;
+        }
+        
+        .container-wide { max-width: 1500px; width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        
+        .dashboard { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 15px; 
+            width: 100%; 
+        }
+
+        @media (min-width: 1024px) {
+            body { padding: 25px; gap: 20px; }
+            .container-wide { gap: 20px; }
+            .dashboard { grid-template-columns: 360px 1fr; gap: 25px; }
+        }
+
+        .selection-mode-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .selection-header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .selection-mode-card h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+        
+        .sync-top-warning { width: 100%; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; line-height: 1.3; }
+        .sync-top-warning.ok { background: #e6f4ea; color: #137333; border: 1px solid #a3cfbb; }
+        .sync-top-warning.warn { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .sync-top-warning.manual { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+        .top-counters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .top-counter-badge { background: #f1f5f9; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; }
+        .top-counter-badge span { font-weight: 700; color: var(--primary); }
+
+        .btn-guia-destacado { background: #1e293b; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+        .btn-guia-destacado:hover { background: #0f172a; }
+
+        .mode-btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn-mode { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid var(--border); padding: 12px 14px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; color: var(--text-main); flex: 1; min-width: 130px; justify-content: center; }
+        .btn-mode .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .btn-mode:hover { background: #f1f5f9; }
+        .btn-mode.active { background: #e0f2fe; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15); }
+
+        .sidebar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .brand h2 { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .section-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+        
+        .card-contador { background: #f1f5f9; padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
+        .contador-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .contador-row label { font-size: 0.85rem; font-weight: 600; }
+        .contador-row input { width: 60px; background: #fff; border: 1px solid var(--border); padding: 5px; border-radius: 6px; text-align: center; font-weight: 600; font-size: 0.9rem; }
+        .restantes { font-size: 0.78rem; color: var(--text-muted); }
+        .restantes span { font-weight: 700; color: var(--text-main); }
+
+        .config-box input, .config-box select { width: 100%; background: #fff; border: 1px solid var(--border); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; outline: none; }
+        
+        .sequence-clicker-container { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid var(--border); }
+        .sequence-options { display: flex; gap: 4px; flex-wrap: wrap; }
+        .btn-add-seq-item { background: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; flex: 1; text-align: center; }
+        .btn-add-seq-item:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .sequence-preview-tags { display: flex; gap: 4px; flex-wrap: wrap; background: #fff; padding: 6px; border: 1px solid var(--border); border-radius: 6px; min-height: 38px; align-items: center; }
+        .seq-tag-item { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+        .seq-tag-item .remove-tag { color: #ef4444; cursor: pointer; font-weight: bold; font-size: 0.9rem; padding: 0 2px; }
+        .seq-help-text { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-bottom: 10px; line-height: 1.3; }
+
+        .btn-action { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-size: 0.9rem; text-align: center; }
+        .btn-action:hover { background: var(--primary-hover); }
+
+        .tec-manager-row { display: flex; gap: 6px; margin-bottom: 8px; }
+        .tec-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 80px; overflow-y: auto; padding: 4px 0; -webkit-overflow-scrolling: touch; }
+        .tec-item { background: #e2e8f0; color: #334155; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .tec-item span { cursor: pointer; color: #ef4444; font-weight: 700; font-size: 0.85rem; }
+
+        .main-calendar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); display: flex; flex-direction: column; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        @media (min-width: 768px) { .main-calendar { padding: 25px; } }
+        
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .calendar-header h1 { font-size: 1.25rem; font-weight: 700; text-transform: capitalize; }
+        
+        .nav-controls { display: flex; align-items: center; gap: 6px; }
+        .select-ano { padding: 8px 10px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border); border-radius: 6px; background: #fff; cursor: pointer; outline: none; }
+        .btn-nav { background: #f1f5f9; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+        .calendar-grid { display: grid; grid-template-columns: 35px repeat(7, minmax(85px, 1fr)); gap: 4px; min-width: 640px; }
+        .grid-header { text-align: center; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+        .wk-column { background: #f8fafc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; border: 1px solid var(--border); }
+
+        .day-cell { background: #fff; border: 1px solid var(--border); border-radius: 8px; min-height: 105px; padding: 5px; display: flex; flex-direction: column; gap: 3px; cursor: pointer; position: relative; transition: transform 0.1s, background-color 0.15s; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); }
+        .day-cell:active { transform: scale(0.97); background-color: #f1f5f9; }
+        .day-cell.other-month { opacity: 0.35; background: #f1f5f9; }
+        .day-num { font-weight: 700; font-size: 0.88rem; color: #334155; }
+
+        .day-cell.vaca { border-top: 5px solid var(--vacaciones); }
+        .day-cell.exc { border-top: 5px solid var(--exceso); }
+        .day-cell.med { border-top: 5px solid var(--baja); }
+        .day-cell.perm { border-top: 5px solid var(--permiso); }
+        .day-cell.fest-edit-color { border-top: 5px solid var(--festivo-color); }
+
+        .estado-text-tag { font-size: 0.68rem; font-weight: 700; padding: 2px 4px; border-radius: 4px; margin-top: 1px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+        .vaca .estado-text-tag { background: #e6f4ea; color: #137333; }
+        .exc .estado-text-tag { background: #fef7e0; color: #b06000; }
+        .med .estado-text-tag { background: #fce8e6; color: #c5221f; }
+        .perm .estado-text-tag { background: #f3e8ff; color: #6b21a8; }
+        .fest-edit-color .estado-text-tag { background: #fff3e0; color: #e65100; }
+
+        .day-cell.fest-nac { background: var(--fest-nac); }
+        .day-cell.fest-prov { background: var(--fest-prov); }
+        .day-cell.fest-loc { background: var(--fest-loc); }
+        
+        .fest-name-tag { font-size: 0.65rem; font-weight: 600; padding: 1px 3px; border-radius: 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fest-nac .fest-name-tag { background: #fca5a5; color: var(--fest-nac-text); }
+        .fest-prov .fest-name-tag { background: #bfdbfe; color: var(--fest-prov-text); }
+        .fest-loc .fest-name-tag { background: #99f6e4; color: var(--fest-loc-text); }
+
+        .container-turnos-tecnicos { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
+        .tecnico-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 3px; border-radius: 4px; display: flex; justify-content: space-between; background: #f1f5f9; border: 1px solid var(--border); }
+        .tecnico-tag.t-M { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+        .tecnico-tag.t-T { background: #ffedd5; color: #c2410c; border-color: #fed7aa; }
+        .tecnico-tag.t-MG { background: #fce7f3; color: #be185d; border-color: #fbcfe8; }
+        .tecnico-tag.t-TG { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+
+        .footer-docs { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); width: 100%; }
+        @media (min-width: 768px) { .footer-docs { padding: 20px; } }
+        
+        .table-container { margin-top: 15px; display: block; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; -webkit-overflow-scrolling: touch; }
+        .tabla-salarial { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem; background: #fff; min-width: 800px; }
+        .tabla-salarial th, .tabla-salarial td { padding: 10px; border: 1px solid var(--border); }
+        .tabla-salarial th { background: #f8fafc; color: var(--text-main); font-weight: 700; }
+        .tabla-salarial tr:nth-child(even) { background: #f8fafc; }
+        
+        .tabla-salarial tr.resaltado-mio { background-color: #fef08a !important; border: 2px solid #eab308; font-weight: 600; }
+
+        .convenio-header-visual { background: #e0f2fe; padding: 15px; border-radius: 8px; border-left: 5px solid var(--primary); margin-bottom: 15px; font-size: 0.88rem; line-height: 1.4; }
+        .convenio-header-visual.alerta-no-datos { background: #fff7ed; border-left-color: #f97316; color: #c2410c; }
+        .convenio-header-visual.alerta-manual-establecida { background: #f0fdf4; border-left-color: #166534; color: #166534; }
+
+        .manual-data-panel { background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 12px; margin-top: 15px; }
+        .manual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 8px; margin-top: 10px; }
+        .manual-field { display: flex; flex-direction: column; gap: 4px; }
+        .manual-field label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+        .manual-field input { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; width: 100%; }
+
+        .festivos-manager-block { margin-top: 15px; border-top: 2px dashed var(--border); padding-top: 15px; }
+        .festivos-inline-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; margin-top: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px; -webkit-overflow-scrolling: touch; }
+        .festivo-inline-card { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.82rem; font-weight: 600; }
+        .festivo-inline-card.fest-nac { background: var(--fest-nac); color: var(--fest-nac-text); }
+        .festivo-inline-card.fest-prov { background: var(--fest-prov); color: var(--fest-prov-text); }
+        .festivo-inline-card.fest-loc { background: var(--fest-loc); color: var(--fest-loc-text); }
+        
+        .btn-del-fest-inline { background: none; border: none; color: #ef4444; font-weight: 700; font-size: 1.3rem; cursor: pointer; padding: 5px 10px; margin-left: 5px; line-height: 1; }
+        
+        .festivo-inline-add-form { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 10px; align-items: flex-end; }
+
+        /* Módulo Exportación Horizontal */
+        .export-section-container { margin-top: 15px; padding: 15px; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; }
+        .export-btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .btn-export-item { background: #ffffff; border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .btn-export-item:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; padding: 10px; }
+        .modal-content { background: white; border-radius: 12px; padding: 20px; max-width: 420px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); max-height: 95vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .modal-content h4 { margin-bottom: 12px; font-size: 1.05rem; }
+        .modal-group { margin-bottom: 10px; }
+        .modal-group label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
+        .modal-group select, .modal-group input { width: 100%; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; }
+        .btn-cancel { background: #e2e8f0; color: var(--text-main); border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+
+        .guia-texto h4 { font-size: 1.15rem; color: var(--primary); margin-top: 15px; margin-bottom: 8px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+        .guia-texto h5 { font-size: 0.95rem; color: #0f172a; margin-top: 12px; margin-bottom: 4px; font-weight: 700; }
+        .guia-texto ul { margin-left: 18px; margin-bottom: 8px; }
+        .guia-texto p { font-size: 0.85rem; color: var(--text-main); line-height: 1.4; margin-bottom: 8px; }
+        .guia-texto code { background: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container-wide">
+    
+    <div class="selection-mode-card" id="selector-header-indicador">
+        <div class="selection-header-container">
+            <h3>Modo de Selección (Clic en días)</h3>
+            <div class="top-counters">
+                <div class="top-counter-badge">Vacaciones: <span id="top-vac-disp">0</span>/24 (Quedan: <span id="top-vac-rest">0</span>)</div>
+                <div class="top-counter-badge">Exceso: <span id="top-exc-disp">0</span>/6 (Quedan: <span id="top-exc-rest">0</span>)</div>
+                <button class="btn-guia-destacado" id="btn-abrir-guia">❓ Guía de Uso</button>
+            </div>
+        </div>
+        
+        <div id="top-sync-status-banner" class="sync-top-warning ok">
+            <span>🔄 Comprobando base de datos...</span>
+        </div>
+
+        <div class="mode-btn-group">
+            <button class="btn-mode" data-mode="vaca"><span class="dot" style="background: var(--vacaciones);"></span> Vacaciones</button>
+            <button class="btn-mode" data-mode="exc"><span class="dot" style="background: var(--exceso);"></span> Exceso Horas</button>
+            <button class="btn-mode" data-mode="med"><span class="dot" style="background: var(--baja);"></span> Baja Médica</button>
+            <button class="btn-mode" data-mode="perm"><span class="dot" style="background: var(--permiso);"></span> Permiso</button>
+            <button class="btn-mode" data-mode="fest"><span class="dot" style="background: var(--festivo-color);"></span> Festivo Editable</button>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="brand">
+                <h2>Calendario Laboral</h2>
+            </div>
+
+            <div>
+                <div class="section-title">Gestión de Técnicos</div>
+                <div class="tec-manager-row">
+                    <input type="text" id="new-tec-apodo" placeholder="Apodo" style="width:70%; padding:8px; border:1px solid var(--border); border-radius:6px; outline:none; font-size:0.9rem;">
+                    <button class="btn-action" id="btn-add-tec" style="width:30%; padding:8px;">Añadir</button>
+                </div>
+                <div class="tec-list" id="lista-tecnicos"></div>
+            </div>
+
+            <div>
+                <div class="section-title">Control de Días</div>
+                <div class="card-contador">
+                    <div class="contador-row">
+                        <label>Vacaciones Año:</label>
+                        <input type="number" id="vac-totales" value="24">
+                    </div>
+                    <div class="restantes">Restantes: <span id="vac-restantes">24</span></div>
+                </div>
+                <div style="height: 8px;"></div>
+                <div class="card-contador">
+                    <div class="contador-row">
+                        <label>Exceso Horas:</label>
+                        <input type="number" id="exc-totales" value="6">
+                    </div>
+                    <div class="restantes">Restantes: <span id="exc-restantes">6</span></div>
+                </div>
+            </div>
+
+            <div class="config-box">
+                <div class="section-title">Proyección de Secuencia</div>
+                
+                <label style="font-size: 0.8rem; font-weight:600;">Seleccionar Técnico:</label>
+                <select id="seq-select-tecnico"></select>
+                
+                <label style="font-size: 0.8rem; font-weight:600;">Armar Secuencia Cíclica:</label>
+                <div class="sequence-clicker-container">
+                    <div class="sequence-options">
+                        <button type="button" class="btn-add-seq-item" data-value="M">☀️ M</button>
+                        <button type="button" class="btn-add-seq-item" data-value="T">⛅ T</button>
+                        <button type="button" class="btn-add-seq-item" data-value="MG">🚨 MG</button>
+                        <button type="button" class="btn-add-seq-item" data-value="TG">🔮 TG</button>
+                    </div>
+                    <div class="sequence-preview-tags" id="seq-preview-container"></div>
+                </div>
+                <div class="seq-help-text">* Usa: M (Mañana), T (Tarde), MG (Mañana+Guardia), TG (Tarde+Guardia) de forma correlativa para estructurar el ciclo de su cuadrante.</div>
+
+                <label style="font-size: 0.8rem; font-weight:600;">Lunes de inicio:</label>
+                <input type="date" id="seq-fecha-inicio" value="2026-06-29">
+                
+                <button class="btn-action" id="btn-proyectar">Proyectar Secuencia</button>
+            </div>
+        </aside>
+
+        <main class="main-calendar">
+            <div class="calendar-header">
+                <h1 id="mes-titulo">Junio 2026</h1>
+                <div class="nav-controls">
+                    <select id="select-ano-global" class="select-ano">
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                    </select>
+                    <button class="btn-nav" id="btn-prev">&lt;</button>
+                    <button class="btn-nav" id="btn-next">&gt;</button>
+                </div>
+            </div>
+            <div class="calendar-grid" id="grid-calendario"></div>
+
+            <div class="export-section-container">
+                <h5 style="font-size:0.85rem; color:var(--text-main);">💾 Exportar Calendario Anual Completo</h5>
+                <p style="font-size:0.75rem; color:var(--text-muted);">Genera un reporte apaisado horizontal con todos los turnos, excesos, festivos oficiales y vacaciones asignadas.</p>
+                <div class="export-btn-group">
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('PDF')">📄 Exportar a PDF (Horizontal)</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Excel')">📊 Exportar a Excel (.xlsx)</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Imagen')">🖼️ Guardar como Imagen</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="footer-docs">
+        <div>
+            <h3 style="font-size:1.1rem; color:var(--primary);">Convenio Colectivo para la Industria del Siderometal (A Coruña)</h3>
+            <p style="font-size:0.82rem; color:var(--text-muted);">Parametrización completa e interactiva.</p>
+        </div>
+        
+        <div class="table-container" id="tabla-salarial-container">
+            <div class="convenio-header-visual" id="convenio-meta-info"></div>
+            
+            <div class="manual-data-panel" id="panel-entrada-manual">
+                <h4 style="font-size:0.95rem; color:var(--text-main); margin-bottom:5px;">✍️ Panel de Control y Modificación del Año Activo</h4>
+                
+                <div style="margin-bottom: 12px; max-width: 300px;">
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); display:block; margin-bottom:4px;">Selecciona tu Grupo de Trabajo:</label>
+                    <select id="select-mi-grupo-global" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff; font-weight: 600;">
+                        <option value="1">Grupo 1 - Técnicos/as Grado Superior</option>
+                        <option value="2">Grupo 2 - Técnicos/as Grado Medio</option>
+                        <option value="3-A">Grupo 3-A - Xefe de Taller / Admin 1ª</option>
+                        <option value="3-B">Grupo 3-B - Xefe Organizac. 2ª</option>
+                        <option value="3-C">Grupo 3-C - Mestres de Taller</option>
+                        <option value="4-A">Grupo 4-A - Delineante / Encargado</option>
+                        <option value="5-B" selected>Grupo 5-B - Profesional Oficio 1ª / Chófer</option>
+                        <option value="6">Grupo 6 - Almaceneiro / Especialista</option>
+                        <option value="7">Grupo 7 - Peón / Vixiante</option>
+                    </select>
+                </div>
+
+                <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:10px;">Modifica los importes del <span id="label-grupo-modificar" style="font-weight:700;">Grupo 5-B</span> si es necesario:</p>
+                <div class="manual-grid">
+                    <div class="manual-field"><label>Salario Base (€)</label><input type="text" id="m-sb" value="1.711,61"></div>
+                    <div class="manual-field"><label>Plus Asist. Día</label><input type="text" id="m-pa" value="5,83"></div>
+                    <div class="manual-field"><label>Plus Asist. Mes</label><input type="text" id="m-pm" value="145,26"></div>
+                    <div class="manual-field"><label>Pagas Extras (€)</label><input type="text" id="m-pe" value="3.714,72"></div>
+                    <div class="manual-field"><label>Total Anual (€)</label><input type="text" id="m-tot" value="25.995,77"></div>
+                    <div class="manual-field"><label>H. Extra Lab</label><input type="text" id="m-exl" value="23,74"></div>
+                    <div class="manual-field"><label>H. Extra Fest</label><input type="text" id="m-exf" value="25,97"></div>
+                </div>
+                <button class="btn-action" id="btn-guardar-manual" style="width:auto; margin-top:12px; padding:8px 16px; font-size:0.82rem; background:#10b981;">Guardar Datos del Grupo Seleccionado</button>
+
+                <div class="festivos-manager-block">
+                    <h5 style="font-size:0.88rem; color:var(--text-main); margin-bottom:4px;">📆 Festivos Oficiales Reconocidos para este Año</h5>
+                    <p style="font-size:0.75rem; color:var(--text-muted);">Añade o elimina los días reconocidos del calendario laboral de A Coruña:</p>
+                    
+                    <div class="festivos-inline-list" id="lista-festivos-inline"></div>
+
+                    <div class="festivo-inline-add-form">
+                        <div style="flex:1; min-width:130px;" class="manual-field">
+                            <label>Fecha Exacta</label>
+                            <input type="date" id="add-fest-fecha">
+                        </div>
+                        <div style="flex:1; min-width:160px;" class="manual-field">
+                            <label>Nombre del Festivo</label>
+                            <input type="text" id="add-fest-nombre" placeholder="Ej: San Juan">
+                        </div>
+                        <div style="flex:1; min-width:130px;" class="manual-field">
+                            <label>Tipo de Ámbito</label>
+                            <select id="add-fest-tipo" style="padding:8px; border:1px solid var(--border); border-radius:6px; font-size:0.85rem; background:#fff; width:100%;">
+                                <option value="fest-nac">Nacional</option>
+                                <option value="fest-prov">Provincial / Autonómico</option>
+                                <option value="fest-loc">Local A Coruña</option>
+                            </select>
+                        </div>
+                        <button class="btn-action" id="btn-add-fest-inline" style="width:auto; padding:10px 16px; font-size:0.82rem; background:var(--primary);">➕ Añadir Festivo</button>
+                    </div>
+                </div>
+            </div>
+
+            <table class="tabla-salarial" style="margin-top:15px;">
+                <thead>
+                    <tr>
+                        <th>Grupo</th>
+                        <th>Puestos de Trabajo (Niveles)</th>
+                        <th>Salario Base (€/Mes)</th>
+                        <th>Plus Asist. (€/Día)</th>
+                        <th>Plus Asist. (€/Mes)</th>
+                        <th>Pagas Extras (€)</th>
+                        <th>Total Retribución (€)</th>
+                        <th>H. Extra Lab. (€)</th>
+                        <th>H. Extra Fest. (€)</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo-tabla-salarial"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-dia">
+    <div class="modal-content">
+        <h4 id="modal-fecha-titulo">Configurar Día</h4>
+        <div style="border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 10px; background: #f8fafc;">
+            <label style="font-weight:700; color:var(--primary); font-size:0.8rem;">Modificar Turno de Operario</label>
+            <div class="modal-group" style="margin-top:5px;">
+                <label>Técnico</label>
+                <select id="modal-tec-select"></select>
+            </div>
+            <div class="modal-group">
+                <label>Asignar Turno</label>
+                <select id="modal-turno-select">
+                    <option value="">Ninguno (Libre / Fin de semana)</option>
+                    <option value="M">Mañana (M)</option>
+                    <option value="T">Tarde (T)</option>
+                    <option value="MG">Mañana + Guardia (MG)</option>
+                    <option value="TG">Tarde + Guardia (TG)</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: #fff;">
+            <label style="font-weight:700; color:var(--festivo-color); font-size:0.8rem;">Estado e Incidencias Globales</label>
+            <div class="modal-group" style="margin-top:5px;">
+                <label>Estado del Día</label>
+                <select id="modal-estado-select">
+                    <option value="">Normal (Laborable o descanso común)</option>
+                    <option value="vaca">Vacaciones</option>
+                    <option value="exc">Exceso Horas</option>
+                    <option value="med">Baja Médica</option>
+                    <option value="perm">Permiso Retribuido</option>
+                    <option value="fest">Marcado como Festivo Editable</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn-cancel" id="btn-modal-cancelar">Cancelar</button>
+            <button class="btn-action" id="btn-modal-guardar" style="width:auto; padding:10px 20px;">Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-export-save">
+    <div class="modal-content">
+        <h4 style="font-weight: 700; color: var(--primary);">Confirmar Guardado del Reporte</h4>
+        <div class="modal-group">
+            <label>Nombre del archivo de salida</label>
+            <input type="text" id="export-file-name" value="">
+        </div>
+        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px;">
+            El archivo se procesará de forma binaria real. Si tu navegador está configurado para "Preguntar dónde guardar", se abrirá el popup para elegir <b>Documentos</b>.
+        </p>
+        <div class="modal-buttons">
+            <button class="btn-cancel" id="btn-export-save-cancelar">Cancelar</button>
+            <button class="btn-action" id="btn-export-save-confirmar" style="width:auto; padding:10px 20px;">Guardar y Descargar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-export-success">
+    <div class="modal-content" style="max-width: 440px;">
+        <h4 style="color: #10b981; font-weight: 700; margin-bottom: 8px;">✅ ¡Exportación Procesada y Descargada!</h4>
+        <p style="font-size: 0.88rem; margin-bottom: 15px; color: var(--text-main);" id="text-export-success-path"></p>
+        <div class="modal-buttons" style="justify-content: flex-start; flex-wrap: wrap; gap: 8px;">
+            <button class="btn-cancel" style="padding:8px 14px; font-size:0.8rem;" onclick="cerrarModalesExport();">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-guia">
+    <div class="modal-content" style="max-width: 600px;">
+        <h3 style="color: var(--primary); margin-bottom: 10px; border-bottom: 2px solid var(--border); padding-bottom: 6px;">Manual Completo de Usuario</h3>
+        <div class="guia-texto" style="max-height: 65vh; overflow-y: auto; padding-right: 8px; -webkit-overflow-scrolling: touch;">
+            <h4>1. Propósito de la Aplicación</h4>
+            <p>Esta herramienta sirve para planificar, gestionar y auditar de forma integral los cuadrantes de turnos de tus operarios, controlar las vacaciones anuales y los excesos de horas de manera individualizada, cruzando los datos directamente con las tablas salariales y regulaciones vigentes en el sector del metal de A Coruña.</p>
+            <h4>2. Configuración de Operarios</h4>
+            <p><b>Qué hace:</b> Permite dar de alta la plantilla técnica del taller o departamento.</p>
+            <p><b>Cómo usarlo:</b> Ve al bloque "Gestión de Técnicos" en la barra lateral. Escribe el apodo identificativo del trabajador en el campo de texto (por ejemplo, <i>"Manuel"</i> o <i>"Téc-1"</i>) y pulsa <b>"Añadir"</b>. El operario se guardará automáticamente en el sistema y aparecerá en las listas de asignación.</p>
+            <h4>3. Control Automático de Días Disponibles</h4>
+            <p><b>Qué hace:</b> Supervisa que no te pases de los días pactados.</p>
+            <p><b>Cómo usarlo:</b> En las casillas de "Control de Días" puedes fijar cuántas vacaciones corresponden al año (por defecto 24) y cuántos excesos de jornada (por defecto 6). La barra superior mostrará en tiempo real cuántos has gastado y cuántos quedan limpios.</p>
+            <h4>4. Proyección Inteligente de Cuadrantes</h4>
+            <p><b>Qué hace:</b> Propaga una secuencia cíclica para todo el año en segundos sin tener que rellenar día a día.</p>
+            <p><b>Cómo usarlo:</b>
+                <ul>
+                    <li>Selecciona el operario en el desplegable de Proyección.</li>
+                    <li>Haz clic en los botones de turnos (<code>☀️ M</code>, <code>⛅ T</code>, <code>🚨 MG</code>, <code>🔮 TG</code>) para armar su rueda rotatoria.</li>
+                    <li>Indica en el calendario la fecha de inicio (un lunes) en la que arranca su rotación.</li>
+                    <li>Haz clic en <b>"Proyectar Secuencia"</b>. El sistema programará automáticamente los turnos laborables de lunes a viernes (o guardias completas si elegiste MG/TG) para el resto del año.</li>
+                </ul>
+            </p>
+            <h4>5. Edición Avanzada Celda por Celda</h4>
+            <p><b>Qué hace:</b> Edita al detalle todo lo que ocurre en un día concreto para un operario.</p>
+            <p><b>Cómo usarlo:</b> Haz <b>clic</b> en la celda del día. Se abrirá una ventana emergente. Aquí puedes definir qué operario trabaja, su turno específico ese día, el nombre de un festivo o su estado de baja/permiso. Al pulsar <b>"Guardar"</b> se actualizarán los contadores.</p>
+            <h4>6. Tablas Salariales y Control Manual</h4>
+            <p><b>Qué hace:</b> Administra los salarios y pluses vigentes por grupo. Compara datos oficiales con modificaciones del usuario.</p>
+            <p><b>Cómo usarlo:</b> Selecciona tu grupo profesional en el menú desplegable. La tabla resaltará tu fila en amarillo. Si necesitas actualizar los importes porque ha salido una revisión en el BOE, modifica las casillas numéricas del panel y pulsa <b>"Guardar Datos del Grupo"</b>.</p>
+            <h4>7. Sistema de Exportación Apaisada</h4>
+            <p><b>Qué hace:</b> Descarga de forma física reportes preparados para imprimir con los cuadrantes anuales.</p>
+            <p><b>Cómo usarlo:</b> Pulsa cualquiera de los botones de exportación (PDF, Excel, Imagen). Aparecerá un cuadro elegante donde podrás verificar el nombre automático generado. Pulsa <b>"Guardar y Descargar"</b>. El archivo se procesará de forma real.</p>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-action" id="btn-cerrar-guia" style="width: auto; padding: 10px 20px;">Entendido</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // BASE DE DATOS E INICIALIZACIÓN
+    let db = JSON.parse(localStorage.getItem('metal_v8_db')) || {
+        config: { vacTotales: 24, excTotales: 6, miGrupoSalarial: '5-B' },
+        tecnicos: ['Téc_Principal', 'Guardia_Apoyo'],
+        festivos: {
+            '-01-01': { tipo: 'fest-nac', nombre: 'Año Nuevo' },
+            '-01-06': { tipo: 'fest-nac', nombre: 'Reyes' },
+            '-03-19': { tipo: 'fest-prov', nombre: 'San José' },
+            '-04-02': { tipo: 'fest-nac', nombre: 'Jueves Santo' },
+            '-04-03': { tipo: 'fest-nac', nombre: 'Viernes Santo' },
+            '-05-01': { tipo: 'fest-nac', nombre: 'Día do Traballo' },
+            '-06-24': { tipo: 'fest-loc', nombre: 'San Juan' },
+            '-07-25': { tipo: 'fest-prov', nombre: 'Día de Galicia' },
+            '-08-15': { tipo: 'fest-nac', nombre: 'Asunción' },
+            '-10-12': { tipo: 'fest-nac', nombre: 'Festa Nacional' },
+            '-11-01': { tipo: 'fest-nac', nombre: 'Todos os Santos' },
+            '-12-06': { tipo: 'fest-nac', nombre: 'Constitución' },
+            '-12-08': { tipo: 'fest-nac', nombre: 'Inmaculada' },
+            '-12-25': { tipo: 'fest-nac', nombre: 'Navidad' }
+        },
+        diasEspeciales: {},
+        turnosTecnicos: {},
+        datosManualesPorAño: {}
+    };
+
+    if(!db.config.miGrupoSalarial) db.config.miGrupoSalarial = '5-B';
+
+    const datosSalariales2025 = [
+        { g: "1", p: "Técnicos/as de Grao Superior", sb: "2.369,77", pa: "5,83", pm: "145,26", pe: "5.031,04", tot: "35.210,01", exl: "32,16", exf: "35,17" },
+        { g: "2", p: "Técnicos/as de Grao Medio", sb: "2.275,84", pa: "5,83", pm: "145,26", pe: "4.843,18", tot: "33.894,99", exl: "30,95", exf: "33,86" },
+        { g: "3-A", p: "Xefe/a de Taller e Xefe/a Administrat. de 1ª e 2ª", sb: "2.050,21", pa: "5,83", pm: "145,26", pe: "4.391,92", tot: "30.736,17", exl: "28,07", exf: "30,70" },
+        { g: "3-B", p: "Xefe/a Organizac. de 2ª e Técnicos/as Industriais", sb: "1.979,87", pa: "5,83", pm: "145,26", pe: "4.251,24", tot: "29.751,41", exl: "27,17", exf: "29,71" },
+        { g: "3-C", p: "Mestres/as de Taller e Contramaestre", sb: "1.948,01", pa: "5,83", pm: "145,26", pe: "4.186,22", tot: "29.289,89", exl: "26,75", exf: "29,26" },
+        { g: "4-A", p: "Delineante 1ª / Encargado/a / Oficial Admin. 1ª", sb: "1.822,12", pa: "5,83", pm: "145,26", pe: "3.931,52", tot: "27.487,05", exl: "25,11", exf: "27,47" },
+        { g: "5-B", p: "Profesional de Oficio de 1ª. Chofer camión grúa, Siderúrxico 1ª", sb: "1.711,61", pa: "5,83", pm: "145,26", pe: "3.714,72", tot: "25.995,77", exl: "23,74", exf: "25,97" },
+        { g: "6", p: "Almaceneiro/a. Aux. Admon. Especialista. Oficial Oficio 3ª", sb: "1.583,97", pa: "5,83", pm: "145,26", pe: "3.447,21", tot: "24.137,07", exl: "22,04", exf: "24,12" },
+        { g: "7", p: "Peón. Ordenanza. Porteiro/a e Vixiante", sb: "1.521,43", pa: "5,83", pm: "145,26", pe: "3.325,44", tot: "23.250,58", exl: "21,24", exf: "23,23" }
+    ];
+
+    let fechaActual = new Date(Date.UTC(2026, 5, 1)); // Junio 2026
+    let modoSeleccionActivo = null;
+    let secuenciaActualProyeccion = [];
+    let extensionExportActual = 'pdf';
+    let diaSeleccionadoClave = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initContadores();
+        initModoSeleccion();
+        initClickerSecuencias();
+        updateTecnicosUI();
+        
+        document.getElementById('btn-prev').addEventListener('click', () => cambiarMes(-1));
+        document.getElementById('btn-next').addEventListener('click', () => cambiarMes(1));
+        document.getElementById('btn-add-tec').addEventListener('click', agregarTecnico);
+        document.getElementById('btn-proyectar').addEventListener('click', proyectarSecuenciaSafe);
+        document.getElementById('btn-modal-cancelar').addEventListener('click', () => document.getElementById('modal-dia').style.display = 'none');
+        document.getElementById('btn-modal-guardar').addEventListener('click', guardarModalDia);
+        document.getElementById('btn-guardar-manual').addEventListener('click', guardarDatosManuales);
+        document.getElementById('btn-add-fest-inline').addEventListener('click', añadirFestivoInline);
+        document.getElementById('btn-export-save-cancelar').addEventListener('click', () => document.getElementById('modal-export-save').style.display = 'none');
+        document.getElementById('btn-export-save-confirmar').addEventListener('click', ejecutarPaso2Exportacion);
+        
+        document.getElementById('select-mi-grupo-global').addEventListener('change', (e) => {
+            db.config.miGrupoSalarial = e.target.value;
+            document.getElementById('label-grupo-modificar').innerText = `Grupo ${e.target.value}`;
+            save();
+            actualizarTablasVisuales();
+        });
+
+        document.getElementById('select-ano-global').addEventListener('change', (e) => {
+            fechaActual.setFullYear(parseInt(e.target.value));
+            document.getElementById('add-fest-fecha').value = `${e.target.value}-01-01`;
+            render();
+        });
+
+        document.getElementById('btn-abrir-guia').addEventListener('click', () => document.getElementById('modal-guia').style.display = 'flex');
+        document.getElementById('btn-cerrar-guia').addEventListener('click', () => document.getElementById('modal-guia').style.display = 'none');
+        
+        document.getElementById('label-grupo-modificar').innerText = `Grupo ${db.config.miGrupoSalarial}`;
+        document.getElementById('select-mi-grupo-global').value = db.config.miGrupoSalarial;
+
+        render();
+    });
+
+    function initContadores() {
+        const iVac = document.getElementById('vac-totales');
+        const iExc = document.getElementById('exc-totales');
+        iVac.value = db.config.vacTotales;
+        iExc.value = db.config.excTotales;
+
+        iVac.addEventListener('input', (e) => {
+            db.config.vacTotales = parseInt(e.target.value) || 0;
+            render();
+            save();
+        });
+        iExc.addEventListener('input', (e) => {
+            db.config.excTotales = parseInt(e.target.value) || 0;
+            render();
+            save();
+        });
+    }
+
+    function save() {
+        localStorage.setItem('metal_v8_db', JSON.stringify(db));
+    }
+
+    function cambiarMes(dir) {
+        fechaActual.setMonth(fechaActual.getMonth() + dir);
+        document.getElementById('select-ano-global').value = fechaActual.getFullYear();
+        render();
+    }
+
+    function initModoSeleccion() {
+        const botones = document.querySelectorAll('.btn-mode');
+        botones.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modo = btn.getAttribute('data-mode');
+                if (modoSeleccionActivo === modo) {
+                    modoSeleccionActivo = null;
+                    btn.classList.remove('active');
+                } else {
+                    botones.forEach(b => b.classList.remove('active'));
+                    modoSeleccionActivo = modo;
+                    btn.classList.add('active');
+                }
+            });
+        });
+    }
+
+    function initClickerSecuencias() {
+        const btns = document.querySelectorAll('.btn-add-seq-item');
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-value');
+                secuenciaActualProyeccion.push(val);
+                renderPreviewSecuencia();
+            });
+        });
+    }
+
+    function renderPreviewSecuencia() {
+        const container = document.getElementById('seq-preview-container');
+        container.innerHTML = '';
+        secuenciaActualProyeccion.forEach((item, idx) => {
+            container.innerHTML += `
+                <div class="seq-tag-item">
+                    <span>${item}</span>
+                    <span class="remove-tag" onclick="eliminarItemSecuencia(${idx})">&times;</span>
+                </div>
+            `;
+        });
+    }
+
+    window.eliminarItemSecuencia = function(idx) {
+        secuenciaActualProyeccion.splice(idx, 1);
+        renderPreviewSecuencia();
+    }
+
+    function updateTecnicosUI() {
+        const list = document.getElementById('lista-tecnicos');
+        const selectProj = document.getElementById('seq-select-tecnico');
+        const selectModal = document.getElementById('modal-tec-select');
+        
+        list.innerHTML = '';
+        selectProj.innerHTML = '';
+        selectModal.innerHTML = '';
+
+        db.tecnicos.forEach(t => {
+            list.innerHTML += `<div class="tec-item">${t}<span onclick="eliminarTecnico('${t}')">&times;</span></div>`;
+            selectProj.innerHTML += `<option value="${t}">${t}</option>`;
+            selectModal.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+    }
+
+    function agregarTecnico() {
+        const inp = document.getElementById('new-tec-apodo');
+        const name = inp.value.trim().replace(/[^a-zA-Z0-9_]/g, '');
+        if(name && !db.tecnicos.includes(name)) {
+            db.tecnicos.push(name);
+            inp.value = '';
+            updateTecnicosUI();
+            save();
+        }
+    }
+
+    function eliminarTecnico(name) {
+        db.tecnicos = db.tecnicos.filter(t => t !== name);
+        updateTecnicosUI();
+        save();
+        render();
+    }
+
+    function proyectarSecuenciaSafe() {
+        const tec = document.getElementById('seq-select-tecnico').value;
+        const dateInput = document.getElementById('seq-fecha-inicio').value;
+        if(!tec || secuenciaActualProyeccion.length === 0 || !dateInput) return alert("Completa los campos de proyección.");
+        
+        let partes = dateInput.split('-');
+        let cursor = new Date(Date.UTC(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2])));
+        let añoTarget = cursor.getUTCFullYear();
+        let idxSemana = 0;
+
+        while(cursor.getUTCFullYear() === añoTarget) {
+            let turnoSemana = secuenciaActualProyeccion[idxSemana % secuenciaActualProyeccion.length];
+            for(let d=0; d<7; d++) {
+                if(cursor.getUTCFullYear() !== añoTarget) break;
+                let fStr = cursor.toISOString().split('T')[0];
+                let numDiaSemana = cursor.getUTCDay();
+
+                if(!db.turnosTecnicos[fStr]) db.turnosTecnicos[fStr] = {};
+                if(turnoSemana.includes('G')) {
+                    db.turnosTecnicos[fStr][tec] = turnoSemana;
+                } else {
+                    if(numDiaSemana >= 1 && numDiaSemana <= 5) db.turnosTecnicos[fStr][tec] = turnoSemana;
+                    else delete db.turnosTecnicos[fStr][tec];
+                }
+                cursor.setUTCDate(cursor.getUTCDate() + 1);
+            }
+            idxSemana++;
+        }
+        save();
+        render();
+        alert("Secuencia propagada.");
+    }
+
+    function gestionarClicDia(fStr, cellElement) {
+        if(modoSeleccionActivo) {
+            if(db.diasEspeciales[fStr] === modoSeleccionActivo) {
+                delete db.diasEspeciales[fStr];
+            } else {
+                db.diasEspeciales[fStr] = modoSeleccionActivo;
+            }
+            save();
+            render();
+        } else {
+            diaSeleccionadoClave = fStr;
+            document.getElementById('modal-fecha-titulo').innerText = `Configurar Día: ${fStr.split('-').reverse().join('/')}`;
+            document.getElementById('modal-estado-select').value = db.diasEspeciales[fStr] || "";
+            
+            const tecActivo = document.getElementById('modal-tec-select').value;
+            document.getElementById('modal-turno-select').value = (db.turnosTecnicos[fStr] && db.turnosTecnicos[fStr][tecActivo]) || "";
+            
+            document.getElementById('modal-dia').style.display = 'flex';
+        }
+    }
+
+    function guardarModalDia() {
+        if(!diaSeleccionadoClave) return;
+        let estado = document.getElementById('modal-estado-select').value;
+        let tec = document.getElementById('modal-tec-select').value;
+        let turno = document.getElementById('modal-turno-select').value;
+
+        if(estado) db.diasEspeciales[diaSeleccionadoClave] = estado;
+        else delete db.diasEspeciales[diaSeleccionadoClave];
+
+        if(!db.turnosTecnicos[diaSeleccionadoClave]) db.turnosTecnicos[diaSeleccionadoClave] = {};
+        if(turno) db.turnosTecnicos[diaSeleccionadoClave][tec] = turno;
+        else if(db.turnosTecnicos[diaSeleccionadoClave]) delete db.turnosTecnicos[diaSeleccionadoClave][tec];
+
+        save();
+        document.getElementById('modal-dia').style.display = 'none';
+        render();
+    }
+
+    function guardarDatosManuales() {
+        let año = fechaActual.getFullYear();
+        let grupoActivo = db.config.miGrupoSalarial;
+        if(!db.datosManualesPorAño[año]) db.datosManualesPorAño[año] = {};
+        
+        db.datosManualesPorAño[año][grupoActivo] = {
+            sb: document.getElementById('m-sb').value,
+            pa: document.getElementById('m-pa').value,
+            pm: document.getElementById('m-pm').value,
+            pe: document.getElementById('m-pe').value,
+            tot: document.getElementById('m-tot').value,
+            exl: document.getElementById('m-exl').value,
+            exf: document.getElementById('m-exf').value
+        };
+        save();
+        actualizarTablasVisuales();
+        alert("Datos manuales salvados para el año " + año);
+    }
+
+    function añadirFestivoInline() {
+        let f = document.getElementById('add-fest-fecha').value;
+        let n = document.getElementById('add-fest-nombre').value.trim();
+        let t = document.getElementById('add-fest-tipo').value;
+        if(!f || !n) return alert("Pon fecha y nombre.");
+        
+        db.festivos[f] = { tipo: t, nombre: n };
+        document.getElementById('add-fest-nombre').value = '';
+        save();
+        render();
+    }
+
+    window.eliminarFestivoInline = function(clave) {
+        delete db.festivos[clave];
+        save();
+        render();
+    }
+
+    /* FILTRO DE EXPORTACIÓN REAL CORREGIDO */
+    window.abrirFlujoExportacion = function(tipo) {
+        let año = fechaActual.getFullYear();
+        let extensiones = { 'PDF': 'pdf', 'Excel': 'xlsx', 'Imagen': 'png' };
+        extensionExportActual = extensiones[tipo] || 'pdf';
+        document.getElementById('export-file-name').value = `calendario_laboral_${año}.${extensionExportActual}`;
+        document.getElementById('modal-export-save').style.display = 'flex';
+    }
+
+    window.cerrarModalesExport = function() {
+        document.getElementById('modal-export-success').style.display = 'none';
+    }
+
+    function ejecutarPaso2Exportacion() {
+        let nombreArchivo = document.getElementById('export-file-name').value.trim();
+        if(!nombreArchivo) return alert("Por favor introduce un nombre válido.");
+        document.getElementById('modal-export-save').style.display = 'none';
+
+        if (extensionExportActual === 'xlsx') {
+            // EXPORTACIÓN EXCEL REAL CON DATOS DE LA APLICACIÓN
+            let wb = XLSX.utils.book_new();
+            
+            // Pestaña 1: Configuración General
+            let wsConfigData = [
+                ["CONFIGURACIÓN DEL CALENDARIO ANUAL"],
+                ["Año Evaluado", fechaActual.getFullYear()],
+                ["Grupo Salarial Activo", db.config.miGrupoSalarial],
+                ["Vacaciones Asignadas Totales", db.config.vacTotales],
+                ["Excesos Permitidos", db.config.excTotales],
+                [],
+                ["TÉCNICOS DE ALTA"],
+                ...db.tecnicos.map(t => [t])
+            ];
+            let wsConfig = XLSX.utils.aoa_to_sheet(wsConfigData);
+            XLSX.utils.book_append_sheet(wb, wsConfig, "Configuración");
+
+            // Pestaña 2: Histórico de Incidencias/Días especiales
+            let wsDiasData = [["Fecha", "Tipo Incidencia / Estado"]];
+            Object.keys(db.diasEspeciales).sort().forEach(k => {
+                wsDiasData.push([k, db.diasEspeciales[k]]);
+            });
+            let wsDias = XLSX.utils.aoa_to_sheet(wsDiasData);
+            XLSX.utils.book_append_sheet(wb, wsDias, "Días Especiales y Vacaciones");
+
+            // Pestaña 3: Turnos Asignados
+            let wsTurnosData = [["Fecha", "Operario", "Turno"]];
+            Object.keys(db.turnosTecnicos).sort().forEach(fecha => {
+                Object.keys(db.turnosTecnicos[fecha]).forEach(tec => {
+                    wsTurnosData.push([fecha, tec, db.turnosTecnicos[fecha][tec]]);
+                });
+            });
+            let wsTurnos = XLSX.utils.aoa_to_sheet(wsTurnosData);
+            XLSX.utils.book_append_sheet(wb, wsTurnos, "Cuadrante de Turnos");
+
+            XLSX.writeFile(wb, nombreArchivo);
+            
+            document.getElementById('text-export-success-path').innerText = `Tu reporte en hoja de cálculo se ha estructurado con pestañas independientes para los Turnos, Incidencias y Configuración del sector metalúrgico.`;
+            document.getElementById('modal-export-success').style.display = 'flex';
+
+        } else if (extensionExportActual === 'pdf' || extensionExportActual === 'png') {
+            // EXPORTACIÓN ANUAL COMPLETA — los 12 meses del año seleccionado
+            let añoExp = fechaActual.getFullYear();
+            let nombresMeses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+            let contenedorImpresion = document.createElement('div');
+            contenedorImpresion.style.cssText = 'padding:20px;background:#fff;font-family:Segoe UI,sans-serif;';
+            let cabecera = document.createElement('div');
+            cabecera.innerHTML = '<h1 style="color:#2563eb;margin-bottom:6px;font-size:20px;">CUADRANTE LABORAL ANUAL ' + añoExp + '</h1>' +
+                '<p style="color:#64748b;margin-bottom:18px;font-size:12px;">Convenio Metal A Coruña &mdash; Generado el ' + new Date().toLocaleDateString('es-ES') + '</p>';
+            contenedorImpresion.appendChild(cabecera);
+
+            for (let mesExp = 0; mesExp < 12; mesExp++) {
+                let bloque = document.createElement('div');
+                bloque.style.cssText = 'margin-bottom:20px;page-break-inside:avoid;';
+                let hMes = document.createElement('h3');
+                hMes.style.cssText = 'font-size:14px;color:#1e293b;margin-bottom:6px;border-bottom:2px solid #2563eb;padding-bottom:3px;';
+                hMes.textContent = nombresMeses[mesExp] + ' ' + añoExp;
+                bloque.appendChild(hMes);
+                bloque.appendChild(generarGridMes(añoExp, mesExp));
+                contenedorImpresion.appendChild(bloque);
+            }
+
+            let opt = {
+                margin:       8,
+                filename:     nombreArchivo,
+                image:        { type: 'jpeg', quality: 0.97 },
+                html2canvas:  { scale: 1.8, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+
+            if(extensionExportActual === 'pdf') {
+                html2pdf().set(opt).from(contenedorImpresion).save().then(() => {
+                    document.getElementById('text-export-success-path').innerText = 'Calendario anual completo (' + añoExp + ') exportado correctamente. Todos los meses con turnos, festivos, vacaciones y excesos.';
+                    document.getElementById('modal-export-success').style.display = 'flex';
+                });
+            } else {
+                html2pdf().set(opt).from(contenedorImpresion).outputImg().then((img) => {
+                    let a = document.createElement('a');
+                    a.href = img.src;
+                    a.download = nombreArchivo;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    document.getElementById('text-export-success-path').innerText = 'Imagen del calendario anual ' + añoExp + ' generada con todos los meses.';
+                    document.getElementById('modal-export-success').style.display = 'flex';
+                });
+            }
+        }
+    }
+
+    function render() {
+        const grid = document.getElementById('grid-calendario');
+        const titulo = document.getElementById('mes-titulo');
+        
+        let año = fechaActual.getFullYear();
+        let mes = fechaActual.getMonth();
+
+        let nombresMeses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+        titulo.innerText = `${nombresMeses[mes]} ${año}`;
+
+        grid.innerHTML = '';
+
+        // Cabeceras de días
+        grid.innerHTML += `<div class="grid-header">Sem</div>`;
+        let diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+        diasSemana.forEach(d => {
+            grid.innerHTML += `<div class="grid-header">${d}</div>`;
+        });
+
+        let primerDiaMes = new Date(Date.UTC(año, mes, 1));
+        let diaSemanaInicio = primerDiaMes.getUTCDay() || 7;
+        
+        let cursorGrid = new Date(Date.UTC(año, mes, 1));
+        cursorGrid.setUTCDate(cursorGrid.getUTCDate() - (diaSemanaInicio - 1));
+
+        let cVac = 0; let cExc = 0;
+        Object.keys(db.diasEspeciales).forEach(k => {
+            if(k.startsWith(año.toString())) {
+                if(db.diasEspeciales[k] === 'vaca') cVac++;
+                if(db.diasEspeciales[k] === 'exc') cExc++;
+            }
+        });
+
+        document.getElementById('top-vac-disp').innerText = cVac;
+        document.getElementById('vac-restantes').innerText = Math.max(0, db.config.vacTotales - cVac);
+        document.getElementById('top-vac-rest').innerText = Math.max(0, db.config.vacTotales - cVac);
+        
+        document.getElementById('top-exc-disp').innerText = cExc;
+        document.getElementById('exc-restantes').innerText = Math.max(0, db.config.excTotales - cExc);
+        document.getElementById('top-exc-rest').innerText = Math.max(0, db.config.excTotales - cExc);
+
+        let mapaTextos = { 'vaca': 'Vacaciones', 'exc': 'Exceso Horas', 'med': 'Baja Médica', 'perm': 'Permiso', 'fest': 'Festivo Edit' };
+
+        for(let f=0; f<6; f++) {
+            if(f > 0 && cursorGrid.getUTCFullYear() === año && cursorGrid.getUTCMonth() > mes) break;
+            
+            let numSemana = getNumeroSemana(cursorGrid);
+            grid.innerHTML += `<div class="wk-column">${numSemana}</div>`;
+
+            for(let d=0; d<7; d++) {
+                let cell = document.createElement('div');
+                cell.className = 'day-cell';
+                if(cursorGrid.getUTCMonth() !== mes) cell.classList.add('other-month');
+
+                let fStr = cursorGrid.toISOString().split('T')[0];
+                let sufijoAnual = fStr.substring(4);
+
+                cell.innerHTML = `<span class="day-num">${cursorGrid.getUTCDate()}</span>`;
+
+                if(db.festivos[fStr] || db.festivos[sufijoAnual]) {
+                    let fObj = db.festivos[fStr] || db.festivos[sufijoAnual];
+                    cell.classList.add(fObj.tipo);
+                    cell.innerHTML += `<div class="fest-name-tag" title="${fObj.nombre}">${fObj.nombre}</div>`;
+                }
+
+                if(db.diasEspeciales[fStr]) {
+                    let estado = db.diasEspeciales[fStr];
+                    cell.classList.add(estado === 'fest' ? 'fest-edit-color' : estado);
+                    cell.innerHTML += `<div class="estado-text-tag">${mapaTextos[estado] || 'Marcado'}</div>`;
+                }
+
+                if(db.turnosTecnicos[fStr]) {
+                    let container = document.createElement('div'); 
+                    container.className = 'container-turnos-tecnicos';
+                    Object.keys(db.turnosTecnicos[fStr]).forEach(apodo => {
+                        let turno = db.turnosTecnicos[fStr][apodo];
+                        container.innerHTML += `<div class="tecnico-tag t-${turno}"><span>${apodo}</span><span>${turno}</span></div>`;
+                    });
+                    cell.appendChild(container);
+                }
+
+                cell.addEventListener('click', function() {
+                    gestionarClicDia(fStr, this);
+                });
+                
+                grid.appendChild(cell);
+                cursorGrid.setUTCDate(cursorGrid.getUTCDate() + 1);
+            }
+        }
+        renderPreviewSecuencia();
+        actualizarTablasVisuales(); 
+    }
+
+    function obtenerUltimosDatosConocidos(añoBase, grupo) {
+        for(let a = añoBase; a >= 2024; a--) {
+            if(db.datosManualesPorAño[a] && db.datosManualesPorAño[a][grupo]) {
+                return db.datosManualesPorAño[a][grupo];
+            }
+        }
+        return datosSalariales2025.find(x => x.g === grupo) || null;
+    }
+
+    function actualizarTablasVisuales() {
+        const cuerpo = document.getElementById('cuerpo-tabla-salarial');
+        const headerInfo = document.getElementById('convenio-meta-info');
+        const topBanner = document.getElementById('top-sync-status-banner');
+        const panelManual = document.getElementById('panel-entrada-manual');
+        const listaFestivosInline = document.getElementById('lista-festivos-inline');
+        
+        let año = fechaActual.getFullYear();
+        let grupoSeleccionado = db.config.miGrupoSalarial;
+
+        cuerpo.innerHTML = '';
+        listaFestivosInline.innerHTML = '';
+        let festivosEncontrados = 0;
+        let nombresTipos = { 'fest-nac': 'Nacional', 'fest-prov': 'Provincial', 'fest-loc': 'Local' };
+
+        Object.keys(db.festivos).sort().forEach(clave => {
+            let aplica = false;
+            let fechaFormateada = "";
+            let nombreMostrar = db.festivos[clave].nombre;
+            if(clave.startsWith('-')) {
+                aplica = true;
+                fechaFormateada = `${año}${clave}`;
+            } else if(clave.startsWith(año.toString())) {
+                aplica = true;
+                fechaFormateada = clave;
+            }
+            if(aplica) {
+                festivosEncontrados++;
+                let fObj = db.festivos[clave];
+                listaFestivosInline.innerHTML += `
+                    <div class="festivo-inline-card ${fObj.tipo}">
+                        <div>
+                            <span style="font-size:0.75rem; opacity:0.8;">[${nombresTipos[fObj.tipo]}]</span><br>
+                            <strong>${fechaFormateada.split('-').reverse().join('/')}</strong> - ${nombreMostrar}
+                        </div>
+                        <button class="btn-del-fest-inline" onclick="eliminarFestivoInline('${clave}')" title="Borrar festivo">&times;</button>
+                    </div>
+                `;
+            }
+        });
+
+        if(festivosEncontrados === 0) {
+            listaFestivosInline.innerHTML = '<p style="color:var(--text-muted); font-size:0.8rem; padding:10px;">No hay festivos oficiales cargados para este año.</p>';
+        }
+
+        let tieneDatosPropiosEsteAño = !!(db.datosManualesPorAño[año] && db.datosManualesPorAño[año][grupoSeleccionado]);
+
+        if (año === 2025) {
+            topBanner.className = "sync-top-warning ok";
+            topBanner.innerHTML = `<span>✅ <b>Año 2025:</b> Datos oficiales del PDF sincronizados correctamente. Grupo activo resaltado.</span>`;
+            headerInfo.className = "convenio-header-visual";
+            headerInfo.innerHTML = `<strong>Oficial PDF (Año 2025)</strong><br>Datos reales extraídos de la Comisión Paritaria de A Coruña. El grupo seleccionado se marca en amarillo en la tabla inferior.`;
+            panelManual.style.display = "block";
+            
+            if(!tieneDatosPropiosEsteAño) {
+                let d25 = datosSalariales2025.find(x => x.g === grupoSeleccionado);
+                if(d25) {
+                    document.getElementById('m-sb').value = d25.sb;
+                    document.getElementById('m-pa').value = d25.pa;
+                    document.getElementById('m-pm').value = d25.pm;
+                    document.getElementById('m-pe').value = d25.pe;
+                    document.getElementById('m-tot').value = d25.tot;
+                    document.getElementById('m-exl').value = d25.exl;
+                    document.getElementById('m-exf').value = d25.exf;
+                }
+            }
+        } else {
+            if(tieneDatosPropiosEsteAño) {
+                topBanner.className = "sync-top-warning manual";
+                topBanner.innerHTML = `<span>⚠️ <b>Año ${año}:</b> Utilizando valores modificados de forma manual por el usuario para el grupo activo.</span>`;
+                headerInfo.className = "convenio-header-visual alerta-manual-establecida";
+                headerInfo.innerHTML = `<strong>Valores Manuales (${año})</strong><br>Estás usando importes personalizados guardados para el Grupo ${grupoSeleccionado}.`;
+            } else {
+                topBanner.className = "sync-top-warning warn";
+                topBanner.innerHTML = `<span>⚠️ <b>Año ${año}:</b> No hay tablas del BOE oficiales cargadas. Heredando la última base conocida.</span>`;
+                headerInfo.className = "convenio-header-visual alerta-no-datos";
+                headerInfo.innerHTML = `<strong>Datos Heredados / Estimados (${año})</strong><br>Mostrando la última información conocida. Edita los campos del panel y haz clic en Guardar si deseas actualizarlos.`;
+            }
+            
+            if(!tieneDatosPropiosEsteAño) {
+                let mActual = obtenerUltimosDatosConocidos(año - 1, grupoSeleccionado);
+                if(mActual) {
+                    document.getElementById('m-sb').value = mActual.sb || "";
+                    document.getElementById('m-pa').value = mActual.pa || "";
+                    document.getElementById('m-pm').value = mActual.pm || "";
+                    document.getElementById('m-pe').value = mActual.pe || "";
+                    document.getElementById('m-tot').value = mActual.tot || "";
+                    document.getElementById('m-exl').value = mActual.exl || "";
+                    document.getElementById('m-exf').value = mActual.exf || "";
+                }
+            }
+        }
+        
+        renderizarEstructuraTablaModificada(año, grupoSeleccionado, cuerpo);
+    }
+
+    function renderizarEstructuraTablaModificada(año, grupoSeleccionado, cuerpo) {
+        const gruposEstructura = [
+            { g: "1", p: "Técnicos/as de Grao Superior" },
+            { g: "2", p: "Técnicos/as de Grao Medio" },
+            { g: "3-A", p: "Xefe/a de Taller e Xefe/a Administrat. de 1ª e 2ª" },
+            { g: "3-B", p: "Xefe/a Organizac. de 2ª e Técnicos/as Industriais" },
+            { g: "3-C", p: "Mestres/as de Taller e Contramaestre" },
+            { g: "4-A", p: "Delineante 1ª / Encargado/a / Oficial Admin. 1ª" },
+            { g: "5-B", p: "Profesional de Oficio de 1ª. Chofer camión grúa, Siderúrxico 1ª" },
+            { g: "6", p: "Almaceneiro/a. Aux. Admon. Especialista. Oficial Oficio 3ª" },
+            { g: "7", p: "Peón. Ordenanza. Porteiro/a e Vixiante" }
+        ];
+
+        gruposEstructura.forEach(item => {
+            let claseResaltado = (item.g === grupoSeleccionado) ? 'class="resaltado-mio"' : '';
+            let m = (db.datosManualesPorAño[año] && db.datosManualesPorAño[año][item.g]) || obtenerUltimosDatosConocidos(año - 1, item.g) || { sb: "—", pa: "—", pm: "—", pe: "—", tot: "—", exl: "—", exf: "—" };
+            
+            cuerpo.innerHTML += `
+                <tr ${claseResaltado}>
+                    <td><strong>${item.g}</strong></td>
+                    <td>${item.p}</td>
+                    <td>${m.sb}</td>
+                    <td>${m.pa}</td>
+                    <td>${m.pm}</td>
+                    <td>${m.pe}</td>
+                    <td><strong>${m.tot}</strong></td>
+                    <td>${m.exl}</td>
+                    <td>${m.exf}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function getNumeroSemana(fecha) {
+        const d = new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    }
+
+    function generarGridMes(año, mes) {
+        let grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:26px repeat(7,1fr);gap:2px;';
+
+        ['Sem','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(function(label) {
+            let h = document.createElement('div');
+            h.style.cssText = 'text-align:center;font-size:0.65rem;font-weight:700;color:#64748b;padding:2px;border-bottom:1px solid #e2e8f0;';
+            h.textContent = label;
+            grid.appendChild(h);
+        });
+
+        let primerDia = new Date(Date.UTC(año, mes, 1));
+        let inicio = primerDia.getUTCDay() || 7;
+        let cursor = new Date(Date.UTC(año, mes, 1));
+        cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+
+        let mapaEstado = { vaca:'V', exc:'Ex', med:'B', perm:'P', fest:'F' };
+        let coloresBord = { vaca:'#10b981', exc:'#f59e0b', med:'#ef4444', perm:'#a855f7', fest:'#f97316' };
+        let coloresFest = { 'fest-nac':'#fee2e2', 'fest-prov':'#dbeafe', 'fest-loc':'#ccfbf1' };
+
+        for (let f = 0; f < 6; f++) {
+            if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
+
+            let wk = document.createElement('div');
+            wk.style.cssText = 'background:#f8fafc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;color:#64748b;font-weight:700;border:1px solid #e2e8f0;';
+            wk.textContent = getNumeroSemana(cursor);
+            grid.appendChild(wk);
+
+            for (let d = 0; d < 7; d++) {
+                let fStr = cursor.toISOString().split('T')[0];
+                let sufijo = fStr.substring(4);
+                let isOther = cursor.getUTCMonth() !== mes;
+                let bg = '#fff';
+                let bordTop = 'none';
+                let extra = '';
+
+                let festObj = db.festivos[fStr] || db.festivos[sufijo];
+                if (festObj) {
+                    bg = coloresFest[festObj.tipo] || bg;
+                    extra = festObj.nombre.substring(0, 6);
+                }
+                let estado = db.diasEspeciales[fStr];
+                if (estado) {
+                    bordTop = '3px solid ' + (coloresBord[estado] || '#ccc');
+                    extra = (extra ? extra + ' ' : '') + (mapaEstado[estado] || '');
+                }
+                let turnos = Object.values(db.turnosTecnicos[fStr] || {}).join(',');
+
+                let cell = document.createElement('div');
+                cell.style.cssText = 'background:' + bg + ';border:1px solid #e2e8f0;border-radius:3px;min-height:38px;padding:2px;display:flex;flex-direction:column;gap:1px;font-size:0.62rem;border-top:' + bordTop + ';opacity:' + (isOther ? '0.3' : '1') + ';overflow:hidden;';
+                cell.innerHTML = '<b style="font-size:0.7rem;">' + cursor.getUTCDate() + '</b>' +
+                    (extra ? '<span style="color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + extra + '</span>' : '') +
+                    (turnos ? '<span style="color:#0369a1;font-weight:700;">' + turnos + '</span>' : '');
+                grid.appendChild(cell);
+                cursor.setUTCDate(cursor.getUTCDate() + 1);
+            }
+        }
+        return grid;
+    }
+
+</script>
+</body>
+</html>
