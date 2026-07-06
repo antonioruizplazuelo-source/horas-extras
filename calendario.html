@@ -1506,9 +1506,10 @@
             + '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml>'
             + '<style>body{font-family:Calibri,Arial;font-size:8pt;margin:0;} td,th{mso-number-format:"@";}</style>'
             + '</head><body>'
-            + leyHtml + mesesHtml
-            + '<p style="font-family:Calibri;font-size:12pt;font-weight:bold;color:#1e3a8a;margin:6px 0 1px;">CALENDARIO LABORAL '+año+(tecn?' · '+tecn:'')+'</p>'
-            + '<p style="font-family:Calibri;font-size:8pt;color:#64748b;margin:0 0 4px;">Convenio Metal A Coru\u00f1a · '+hoy+' · Vacaciones: '+cVac+'/'+db.config.vacTotales+' (rest: '+Math.max(0,db.config.vacTotales-cVac)+') · Excesos: '+cExc+'/'+db.config.excTotales+' (rest: '+Math.max(0,db.config.excTotales-cExc)+')</p>'
+            + mesesHtml
+            + '<p style="font-family:Calibri;font-size:13pt;font-weight:bold;color:#1e3a8a;margin:10px 0 2px;">CALENDARIO LABORAL '+año+(tecn?' · '+tecn:'')+'</p>'
+            + '<p style="font-family:Calibri;font-size:8pt;color:#64748b;margin:0 0 6px;">Convenio Metal A Coru\u00f1a · '+hoy+' · Vacaciones: '+cVac+'/'+db.config.vacTotales+' (rest: '+Math.max(0,db.config.vacTotales-cVac)+') · Excesos: '+cExc+'/'+db.config.excTotales+' (rest: '+Math.max(0,db.config.excTotales-cExc)+')</p>'
+            + leyHtml
             + festHtml
             + '</body></html>';
     }
