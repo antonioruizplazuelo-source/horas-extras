@@ -149,6 +149,8 @@
         .day-cell.med { border-top: 5px solid var(--baja); }
         .day-cell.perm { border-top: 5px solid var(--permiso); }
         .day-cell.fest-edit-color { border-top: 5px solid var(--festivo-color); }
+        .day-cell.today-highlight { box-shadow: 0 0 0 2px #2563eb; background: #eff6ff; }
+        .day-cell.today-highlight .day-num { color: #2563eb; font-size: 1rem; background: #2563eb; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 
         .estado-text-tag { font-size: 0.68rem; font-weight: 700; padding: 2px 4px; border-radius: 4px; margin-top: 1px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
         .vaca .estado-text-tag { background: #e6f4ea; color: #137333; }
@@ -211,8 +213,39 @@
         .btn-export-item { background: #ffffff; border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
         .btn-export-item:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; padding: 10px; }
-        .modal-content { background: white; border-radius: 12px; padding: 20px; max-width: 420px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); max-height: 95vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); z-index: 1000; justify-content: center; align-items: center; padding: 16px; backdrop-filter: blur(4px); }
+        .modal-content { background: white; border-radius: 20px; padding: 28px; max-width: 480px; width: 100%; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); max-height: 95vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .modal-export-header { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+        .modal-export-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+        .modal-export-icon.pdf { background:#fee2e2; }
+        .modal-export-icon.xlsx { background:#dcfce7; }
+        .modal-export-icon.png { background:#dbeafe; }
+        .modal-export-icon.doc { background:#ede9fe; }
+        .modal-export-title { font-size:1.15rem; font-weight:800; color:#0f172a; margin:0; }
+        .modal-export-sub { font-size:0.8rem; color:#64748b; margin:2px 0 0; }
+        .export-fmt-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+        .export-fmt-btn { display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 8px; border:2px solid #e2e8f0; border-radius:14px; cursor:pointer; background:#fff; transition:all 0.15s; font-size:0.78rem; font-weight:600; color:#475569; }
+        .export-fmt-btn:hover { border-color:#2563eb; background:#eff6ff; color:#2563eb; }
+        .export-fmt-btn.active { border-color:#2563eb; background:#eff6ff; color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
+        .export-fmt-btn span.fmt-icon { font-size:26px; }
+        .export-filename-box { margin-bottom:20px; }
+        .export-filename-box label { font-size:0.8rem; font-weight:700; color:#374151; display:block; margin-bottom:6px; }
+        .export-filename-box input { width:100%; padding:10px 14px; border:2px solid #e2e8f0; border-radius:10px; font-size:0.9rem; color:#0f172a; transition:border-color 0.15s; box-sizing:border-box; }
+        .export-filename-box input:focus { outline:none; border-color:#2563eb; }
+        .btn-export-guardar { width:100%; padding:13px; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none; border-radius:12px; font-size:1rem; font-weight:700; cursor:pointer; letter-spacing:0.3px; transition:opacity 0.15s; }
+        .btn-export-guardar:hover { opacity:0.9; }
+        .btn-export-cancelar-link { display:block; text-align:center; margin-top:12px; font-size:0.82rem; color:#94a3b8; cursor:pointer; text-decoration:underline; }
+        .success-icon-wrap { width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg,#10b981,#059669); display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 18px; }
+        .success-title { text-align:center; font-size:1.2rem; font-weight:800; color:#0f172a; margin-bottom:6px; }
+        .success-subtitle { text-align:center; font-size:0.85rem; color:#64748b; margin-bottom:22px; line-height:1.5; }
+        .success-file-chip { display:flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:20px; }
+        .success-file-chip span.chip-icon { font-size:22px; }
+        .success-file-chip span.chip-name { font-size:0.85rem; font-weight:700; color:#1e293b; }
+        .success-file-chip span.chip-loc { font-size:0.72rem; color:#64748b; display:block; }
+        .success-actions { display:grid; gap:8px; }
+        .btn-success-action { padding:11px 16px; border-radius:10px; border:2px solid #e2e8f0; background:#fff; font-size:0.88rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; transition:all 0.15s; color:#374151; }
+        .btn-success-action:hover { border-color:#2563eb; background:#eff6ff; color:#2563eb; }
+        .btn-success-close { padding:10px; border:none; background:none; font-size:0.82rem; color:#94a3b8; cursor:pointer; text-decoration:underline; margin-top:6px; width:100%; }
         .modal-content h4 { margin-bottom: 12px; font-size: 1.05rem; }
         .modal-group { margin-bottom: 10px; }
         .modal-group label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); }
@@ -334,9 +367,10 @@
                 <h5 style="font-size:0.85rem; color:var(--text-main);">💾 Exportar Calendario Anual Completo</h5>
                 <p style="font-size:0.75rem; color:var(--text-muted);">Genera un reporte apaisado horizontal con todos los turnos, excesos, festivos oficiales y vacaciones asignadas.</p>
                 <div class="export-btn-group">
-                    <button class="btn-export-item" onclick="abrirFlujoExportacion('PDF')">📄 Exportar a PDF (Horizontal)</button>
-                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Excel')">📊 Exportar a Excel (.xlsx)</button>
-                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Imagen')">🖼️ Guardar como Imagen</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('PDF')">📄 Exportar a PDF</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Excel')">📊 Excel (.xlsx)</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Imagen')">🖼️ Imagen (.png)</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Word')">📝 Word (.doc)</button>
                 </div>
             </div>
         </main>
@@ -474,28 +508,45 @@
 
 <div class="modal" id="modal-export-save">
     <div class="modal-content">
-        <h4 style="font-weight: 700; color: var(--primary);">Confirmar Guardado del Reporte</h4>
-        <div class="modal-group">
-            <label>Nombre del archivo de salida</label>
+        <div class="modal-export-header">
+            <div class="modal-export-icon pdf" id="export-modal-icon">📄</div>
+            <div>
+                <p class="modal-export-title">Exportar Calendario</p>
+                <p class="modal-export-sub">Año <span id="export-modal-year">2026</span> · Convenio Metal A Coruña</p>
+            </div>
+        </div>
+        <div class="export-fmt-grid" id="export-fmt-grid">
+            <button class="export-fmt-btn active" data-fmt="pdf" onclick="seleccionarFormato(this,'pdf')"><span class="fmt-icon">📄</span>PDF<br><small style="font-weight:400;color:#94a3b8;">Paisaje A4</small></button>
+            <button class="export-fmt-btn" data-fmt="xlsx" onclick="seleccionarFormato(this,'xlsx')"><span class="fmt-icon">📊</span>Excel<br><small style="font-weight:400;color:#94a3b8;">.xlsx</small></button>
+            <button class="export-fmt-btn" data-fmt="png" onclick="seleccionarFormato(this,'png')"><span class="fmt-icon">🖼️</span>Imagen<br><small style="font-weight:400;color:#94a3b8;">.png</small></button>
+            <button class="export-fmt-btn" data-fmt="doc" onclick="seleccionarFormato(this,'doc')"><span class="fmt-icon">📝</span>Word<br><small style="font-weight:400;color:#94a3b8;">.doc</small></button>
+        </div>
+        <div class="export-filename-box">
+            <label>Nombre del archivo</label>
             <input type="text" id="export-file-name" value="">
         </div>
-        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px;">
-            El archivo se procesará de forma binaria real. Si tu navegador está configurado para "Preguntar dónde guardar", se abrirá el popup para elegir <b>Documentos</b>.
-        </p>
-        <div class="modal-buttons">
-            <button class="btn-cancel" id="btn-export-save-cancelar">Cancelar</button>
-            <button class="btn-action" id="btn-export-save-confirmar" style="width:auto; padding:10px 20px;">Guardar y Descargar</button>
-        </div>
+        <button class="btn-export-guardar" id="btn-export-save-confirmar">⬇️ Descargar archivo</button>
+        <span class="btn-export-cancelar-link" id="btn-export-save-cancelar">Cancelar</span>
     </div>
 </div>
 
 <div class="modal" id="modal-export-success">
-    <div class="modal-content" style="max-width: 440px;">
-        <h4 style="color: #10b981; font-weight: 700; margin-bottom: 8px;">✅ ¡Exportación Procesada y Descargada!</h4>
-        <p style="font-size: 0.88rem; margin-bottom: 15px; color: var(--text-main);" id="text-export-success-path"></p>
-        <div class="modal-buttons" style="justify-content: flex-start; flex-wrap: wrap; gap: 8px;">
-            <button class="btn-cancel" style="padding:8px 14px; font-size:0.8rem;" onclick="cerrarModalesExport();">Cerrar</button>
+    <div class="modal-content" style="max-width:420px; text-align:left;">
+        <div class="success-icon-wrap">✅</div>
+        <p class="success-title">¡Archivo descargado!</p>
+        <p class="success-subtitle" id="text-export-success-path">El archivo se ha guardado correctamente en tu carpeta de Descargas.</p>
+        <div class="success-file-chip">
+            <span class="chip-icon" id="success-chip-icon">📄</span>
+            <div>
+                <span class="chip-name" id="success-chip-name">calendario.pdf</span>
+                <span class="chip-loc">📁 Carpeta Descargas</span>
+            </div>
         </div>
+        <div class="success-actions">
+            <button class="btn-success-action" onclick="abrirArchivoDescargado()">👁️ Abrir ahora</button>
+            <button class="btn-success-action" onclick="irACarpetaDescarga()">📂 Ir a la carpeta de Descargas</button>
+        </div>
+        <button class="btn-success-close" onclick="cerrarModalesExport()">Cerrar, ya está</button>
     </div>
 </div>
 
@@ -577,7 +628,8 @@
         { g: "7", p: "Peón. Ordenanza. Porteiro/a e Vixiante", sb: "1.521,43", pa: "5,83", pm: "145,26", pe: "3.325,44", tot: "23.250,58", exl: "21,24", exf: "23,23" }
     ];
 
-    let fechaActual = new Date(Date.UTC(2026, 5, 1)); // Junio 2026
+    let _hoy = new Date();
+    let fechaActual = new Date(Date.UTC(_hoy.getFullYear(), _hoy.getMonth(), 1));
     let modoSeleccionActivo = null;
     let secuenciaActualProyeccion = [];
     let extensionExportActual = 'pdf';
@@ -599,6 +651,7 @@
         document.getElementById('btn-add-fest-inline').addEventListener('click', añadirFestivoInline);
         document.getElementById('btn-export-save-cancelar').addEventListener('click', () => document.getElementById('modal-export-save').style.display = 'none');
         document.getElementById('btn-export-save-confirmar').addEventListener('click', ejecutarPaso2Exportacion);
+        // seleccionarFormato es global, no necesita listener
         
         document.getElementById('select-mi-grupo-global').addEventListener('change', (e) => {
             db.config.miGrupoSalarial = e.target.value;
@@ -839,115 +892,470 @@
         render();
     }
 
-    /* FILTRO DE EXPORTACIÓN REAL CORREGIDO */
+    /* EXPORTACIÓN */
+    let _exportNombreArchivo = '';
+
+    window.seleccionarFormato = function(btn, fmt) {
+        document.querySelectorAll('.export-fmt-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        extensionExportActual = fmt;
+        let año = fechaActual.getFullYear();
+        let iconos = {pdf:'📄',xlsx:'📊',png:'🖼️',doc:'📝'};
+        let clases = {pdf:'pdf',xlsx:'xlsx',png:'png',doc:'doc'};
+        let nombres = {pdf:'Calendario Vacaciones ' + año + '.pdf', xlsx:'Calendario Vacaciones ' + año + '.xlsx', png:'Calendario Vacaciones ' + año + '.png', doc:'Calendario Vacaciones ' + año + '.doc'};
+        document.getElementById('export-modal-icon').textContent = iconos[fmt] || '📄';
+        document.getElementById('export-modal-icon').className = 'modal-export-icon ' + (clases[fmt] || 'pdf');
+        document.getElementById('export-file-name').value = nombres[fmt] || ('Calendario Vacaciones ' + año + '.' + fmt);
+    };
+
     window.abrirFlujoExportacion = function(tipo) {
         let año = fechaActual.getFullYear();
-        let extensiones = { 'PDF': 'pdf', 'Excel': 'xlsx', 'Imagen': 'png' };
-        extensionExportActual = extensiones[tipo] || 'pdf';
-        document.getElementById('export-file-name').value = `calendario_laboral_${año}.${extensionExportActual}`;
+        let mapaFmt = { 'PDF': 'pdf', 'Excel': 'xlsx', 'Imagen': 'png', 'Word': 'doc' };
+        extensionExportActual = mapaFmt[tipo] || 'pdf';
+        document.getElementById('export-modal-year').textContent = año;
+        // Activar botón correcto
+        document.querySelectorAll('.export-fmt-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.fmt === extensionExportActual);
+        });
+        let iconos = {pdf:'📄',xlsx:'📊',png:'🖼️',doc:'📝'};
+        let clases = {pdf:'pdf',xlsx:'xlsx',png:'png',doc:'doc'};
+        document.getElementById('export-modal-icon').textContent = iconos[extensionExportActual] || '📄';
+        document.getElementById('export-modal-icon').className = 'modal-export-icon ' + (clases[extensionExportActual] || 'pdf');
+        let nombres = {pdf:'Calendario Vacaciones ' + año + '.pdf', xlsx:'Calendario Vacaciones ' + año + '.xlsx', png:'Calendario Vacaciones ' + año + '.png', doc:'Calendario Vacaciones ' + año + '.doc'};
+        document.getElementById('export-file-name').value = nombres[extensionExportActual] || ('Calendario Vacaciones ' + año + '.' + extensionExportActual);
         document.getElementById('modal-export-save').style.display = 'flex';
-    }
+    };
 
     window.cerrarModalesExport = function() {
         document.getElementById('modal-export-success').style.display = 'none';
+    };
+
+    window.abrirArchivoDescargado = function() {
+        // Intenta abrir la carpeta de descargas en el explorador (funciona en algunos contextos)
+        try { window.open('file:///'+encodeURIComponent(navigator.userAgent.includes('Windows') ? 'C:/Users/' : '/Users/'),'_blank'); } catch(e) {}
+        alert('Abre tu carpeta de Descargas para encontrar el archivo: ' + _exportNombreArchivo);
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // EXPORTACIÓN: descarga directa sin diálogos del SO
+    // ─────────────────────────────────────────────────────────────────
+    let _lastBlobUrl = null;
+
+    function descargarBlob(blob, nombreArchivo) {
+        if (_lastBlobUrl) URL.revokeObjectURL(_lastBlobUrl);
+        _lastBlobUrl = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = _lastBlobUrl; a.download = nombreArchivo;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
     function ejecutarPaso2Exportacion() {
         let nombreArchivo = document.getElementById('export-file-name').value.trim();
-        if(!nombreArchivo) return alert("Por favor introduce un nombre válido.");
+        if (!nombreArchivo) return alert('Por favor introduce un nombre válido.');
+        _exportNombreArchivo = nombreArchivo;
         document.getElementById('modal-export-save').style.display = 'none';
 
         if (extensionExportActual === 'xlsx') {
-            // EXPORTACIÓN EXCEL REAL CON DATOS DE LA APLICACIÓN
             let wb = XLSX.utils.book_new();
-            
-            // Pestaña 1: Configuración General
+            let año = fechaActual.getFullYear();
             let wsConfigData = [
-                ["CONFIGURACIÓN DEL CALENDARIO ANUAL"],
-                ["Año Evaluado", fechaActual.getFullYear()],
-                ["Grupo Salarial Activo", db.config.miGrupoSalarial],
-                ["Vacaciones Asignadas Totales", db.config.vacTotales],
-                ["Excesos Permitidos", db.config.excTotales],
+                ['CONFIGURACIÓN DEL CALENDARIO ANUAL'],
+                ['Año Evaluado', año],
+                ['Grupo Salarial Activo', db.config.miGrupoSalarial],
+                ['Vacaciones Asignadas Totales', db.config.vacTotales],
+                ['Excesos Permitidos', db.config.excTotales],
                 [],
-                ["TÉCNICOS DE ALTA"],
+                ['TÉCNICOS DE ALTA'],
                 ...db.tecnicos.map(t => [t])
             ];
-            let wsConfig = XLSX.utils.aoa_to_sheet(wsConfigData);
-            XLSX.utils.book_append_sheet(wb, wsConfig, "Configuración");
-
-            // Pestaña 2: Histórico de Incidencias/Días especiales
-            let wsDiasData = [["Fecha", "Tipo Incidencia / Estado"]];
-            Object.keys(db.diasEspeciales).sort().forEach(k => {
-                wsDiasData.push([k, db.diasEspeciales[k]]);
-            });
-            let wsDias = XLSX.utils.aoa_to_sheet(wsDiasData);
-            XLSX.utils.book_append_sheet(wb, wsDias, "Días Especiales y Vacaciones");
-
-            // Pestaña 3: Turnos Asignados
-            let wsTurnosData = [["Fecha", "Operario", "Turno"]];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsConfigData), 'Configuración');
+            let wsDiasData = [['Fecha', 'Tipo']];
+            Object.keys(db.diasEspeciales).sort().forEach(k => wsDiasData.push([k, db.diasEspeciales[k]]));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsDiasData), 'Días Especiales');
+            let wsTurnosData = [['Fecha', 'Operario', 'Turno']];
             Object.keys(db.turnosTecnicos).sort().forEach(fecha => {
                 Object.keys(db.turnosTecnicos[fecha]).forEach(tec => {
                     wsTurnosData.push([fecha, tec, db.turnosTecnicos[fecha][tec]]);
                 });
             });
-            let wsTurnos = XLSX.utils.aoa_to_sheet(wsTurnosData);
-            XLSX.utils.book_append_sheet(wb, wsTurnos, "Cuadrante de Turnos");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsTurnosData), 'Cuadrante de Turnos');
+            let xlsxBlob = new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })],
+                { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            descargarBlob(xlsxBlob, nombreArchivo);
+            mostrarExito('📊', 'Hoja de cálculo con Configuración, Días Especiales y Cuadrante de Turnos.');
 
-            XLSX.writeFile(wb, nombreArchivo);
-            
-            document.getElementById('text-export-success-path').innerText = `Tu reporte en hoja de cálculo se ha estructurado con pestañas independientes para los Turnos, Incidencias y Configuración del sector metalúrgico.`;
-            document.getElementById('modal-export-success').style.display = 'flex';
+        } else if (extensionExportActual === 'doc') {
+            let docHtml = generarDocumentoWord(fechaActual.getFullYear());
+            let blob = new Blob([docHtml], { type: 'application/msword' });
+            descargarBlob(blob, nombreArchivo);
+            mostrarExito('📝', 'Documento Word con el calendario anual y lista de festivos.');
 
         } else if (extensionExportActual === 'pdf' || extensionExportActual === 'png') {
-            // EXPORTACIÓN ANUAL COMPLETA — los 12 meses del año seleccionado
-            let añoExp = fechaActual.getFullYear();
-            let nombresMeses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-
-            let contenedorImpresion = document.createElement('div');
-            contenedorImpresion.style.cssText = 'padding:20px;background:#fff;font-family:Segoe UI,sans-serif;';
-            let cabecera = document.createElement('div');
-            cabecera.innerHTML = '<h1 style="color:#2563eb;margin-bottom:6px;font-size:20px;">CUADRANTE LABORAL ANUAL ' + añoExp + '</h1>' +
-                '<p style="color:#64748b;margin-bottom:18px;font-size:12px;">Convenio Metal A Coruña &mdash; Generado el ' + new Date().toLocaleDateString('es-ES') + '</p>';
-            contenedorImpresion.appendChild(cabecera);
-
-            for (let mesExp = 0; mesExp < 12; mesExp++) {
-                let bloque = document.createElement('div');
-                bloque.style.cssText = 'margin-bottom:20px;page-break-inside:avoid;';
-                let hMes = document.createElement('h3');
-                hMes.style.cssText = 'font-size:14px;color:#1e293b;margin-bottom:6px;border-bottom:2px solid #2563eb;padding-bottom:3px;';
-                hMes.textContent = nombresMeses[mesExp] + ' ' + añoExp;
-                bloque.appendChild(hMes);
-                bloque.appendChild(generarGridMes(añoExp, mesExp));
-                contenedorImpresion.appendChild(bloque);
-            }
+            let contenedor = generarDocumentoPDF(fechaActual.getFullYear());
+            // Insertar en DOM oculto para que el layout calcule tamaños
+            contenedor.style.position = 'fixed';
+            contenedor.style.left = '-9999px';
+            contenedor.style.top = '0';
+            contenedor.style.zIndex = '-1';
+            document.body.appendChild(contenedor);
 
             let opt = {
-                margin:       8,
-                filename:     nombreArchivo,
-                image:        { type: 'jpeg', quality: 0.97 },
-                html2canvas:  { scale: 1.8, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                margin: 5,
+                filename: nombreArchivo,
+                image: { type: 'jpeg', quality: 0.97 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                pagebreak: { mode: [] }
             };
 
-            if(extensionExportActual === 'pdf') {
-                html2pdf().set(opt).from(contenedorImpresion).save().then(() => {
-                    document.getElementById('text-export-success-path').innerText = 'Calendario anual completo (' + añoExp + ') exportado correctamente. Todos los meses con turnos, festivos, vacaciones y excesos.';
-                    document.getElementById('modal-export-success').style.display = 'flex';
-                });
+            if (extensionExportActual === 'pdf') {
+                html2pdf().set(opt).from(contenedor).outputPdf('blob').then(pdfBlob => {
+                    document.body.removeChild(contenedor);
+                    descargarBlob(pdfBlob, nombreArchivo);
+                    mostrarExito('📄', 'PDF en paisaje A4 con los 12 meses, leyenda y festivos.');
+                }).catch(() => document.body.removeChild(contenedor));
             } else {
-                html2pdf().set(opt).from(contenedorImpresion).outputImg().then((img) => {
-                    let a = document.createElement('a');
-                    a.href = img.src;
-                    a.download = nombreArchivo;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    document.getElementById('text-export-success-path').innerText = 'Imagen del calendario anual ' + añoExp + ' generada con todos los meses.';
-                    document.getElementById('modal-export-success').style.display = 'flex';
-                });
+                html2pdf().set(opt).from(contenedor).outputImg().then(img => {
+                    document.body.removeChild(contenedor);
+                    fetch(img.src).then(r => r.blob()).then(pngBlob => {
+                        descargarBlob(pngBlob, nombreArchivo);
+                        mostrarExito('🖼️', 'Imagen PNG del calendario anual generada.');
+                    });
+                }).catch(() => document.body.removeChild(contenedor));
             }
         }
     }
+
+    function mostrarExito(icono, mensaje) {
+        document.getElementById('success-chip-icon').textContent = icono;
+        document.getElementById('success-chip-name').textContent = _exportNombreArchivo;
+        document.getElementById('text-export-success-path').textContent = mensaje;
+        document.getElementById('modal-export-success').style.display = 'flex';
+    }
+
+    window.abrirArchivoDescargado = function() {
+        if (_lastBlobUrl) {
+            window.open(_lastBlobUrl, '_blank');
+        } else {
+            alert('El archivo ya no está disponible en memoria. Búscalo en tu carpeta de Descargas.');
+        }
+    };
+
+    window.irACarpetaDescarga = function() {
+        // Intenta abrir la carpeta de Descargas según el SO
+        let ua = navigator.userAgent;
+        if (ua.includes('Windows')) {
+            // En Windows, el navegador no puede abrir carpetas del sistema por seguridad
+            // Mostramos un toast con instrucción
+            let m = document.createElement('div');
+            m.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:12px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 10px 25px rgba(0,0,0,0.3);max-width:320px;text-align:center;';
+            m.innerHTML = '📁 Abre el <b>Explorador de archivos</b> y ve a<br><b>Este equipo → Descargas</b>';
+            document.body.appendChild(m);
+            setTimeout(() => document.body.removeChild(m), 4000);
+        } else {
+            window.open('', '_blank'); // en Android abre el gestor de archivos en algunos casos
+        }
+        cerrarModalesExport();
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // generarDocumentoPDF — A4 landscape, UNA sola página, 4×3 meses
+    // ─────────────────────────────────────────────────────────────────
+    function generarDocumentoPDF(año) {
+        let nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        let cVac = 0, cExc = 0;
+        Object.keys(db.diasEspeciales).forEach(k => {
+            if (k.startsWith(año.toString())) {
+                if (db.diasEspeciales[k] === 'vaca') cVac++;
+                if (db.diasEspeciales[k] === 'exc') cExc++;
+            }
+        });
+        let vacRest = Math.max(0, db.config.vacTotales - cVac);
+        let excRest = Math.max(0, db.config.excTotales - cExc);
+        let tecnPrincipal = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
+        let hoy = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        // Contenedor a 1100px para que quepa en A4 landscape a scale:2
+        // A4 landscape content: ~287mm × 200mm. Con scale 2 y 1100px de ancho:
+        // canvas=2200px → 2200/287mm = 7.67px/mm → max_h = 200mm×7.67 = 1534px canvas
+        // → elemento máx 767px. Diseñamos para ~730px.
+        let wrap = document.createElement('div');
+        wrap.style.cssText = 'width:1100px;font-family:Segoe UI,Arial,sans-serif;background:#fff;padding:10px 12px 8px;box-sizing:border-box;';
+
+        // ── CABECERA ──
+        let hdr = document.createElement('div');
+        hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:5px;border-bottom:3px solid #1e3a8a;';
+        hdr.innerHTML =
+            '<div>' +
+            '<div style="font-size:15px;font-weight:900;color:#1e3a8a;letter-spacing:-0.3px;line-height:1;">CALENDARIO LABORAL ' + año + (tecnPrincipal ? ' · ' + tecnPrincipal : '') + '</div>' +
+            '<div style="font-size:9px;color:#64748b;margin-top:2px;">Convenio Metal A Coruña · Generado el ' + hoy + '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:10px;">' +
+            '<div style="text-align:center;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:4px 12px;">' +
+            '<div style="font-size:16px;font-weight:900;color:#16a34a;line-height:1.1;">' + cVac + '<span style="font-size:9px;color:#94a3b8;">/' + db.config.vacTotales + '</span></div>' +
+            '<div style="font-size:8px;font-weight:700;color:#64748b;">Vacaciones · <span style="color:#16a34a;">' + vacRest + ' rest.</span></div>' +
+            '</div>' +
+            '<div style="text-align:center;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:4px 12px;">' +
+            '<div style="font-size:16px;font-weight:900;color:#d97706;line-height:1.1;">' + cExc + '<span style="font-size:9px;color:#94a3b8;">/' + db.config.excTotales + '</span></div>' +
+            '<div style="font-size:8px;font-weight:700;color:#64748b;">Excesos · <span style="color:#d97706;">' + excRest + ' rest.</span></div>' +
+            '</div>' +
+            '</div>';
+        wrap.appendChild(hdr);
+
+        // ── LEYENDA ──
+        let ley = document.createElement('div');
+        ley.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:6px;align-items:center;';
+        [
+            { col: '#dc2626', label: 'Festivo Nacional', sq: true },
+            { col: '#16a34a', label: 'Festivo Autonómico', sq: true },
+            { col: '#2563eb', label: 'Festivo Local', sq: true },
+            { col: '#10b981', label: 'Vacaciones', brd: true },
+            { col: '#f59e0b', label: 'Exceso Horas', brd: true },
+            { col: '#ef4444', label: 'Baja Médica', brd: true },
+            { col: '#a855f7', label: 'Permiso', brd: true },
+            { col: '#f97316', label: 'Festivo Editable', brd: true },
+        ].forEach(it => {
+            let item = document.createElement('div');
+            item.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:8px;font-weight:600;color:#374151;';
+            let sq = document.createElement('div');
+            if (it.brd) sq.style.cssText = 'width:12px;height:12px;border-radius:2px;border-top:4px solid ' + it.col + ';border:1px solid #e2e8f0;border-top-width:4px;background:#f8fafc;flex-shrink:0;';
+            else sq.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + it.col + ';flex-shrink:0;';
+            item.appendChild(sq);
+            item.appendChild(document.createTextNode(it.label));
+            ley.appendChild(item);
+        });
+        wrap.appendChild(ley);
+
+        // ── GRID 4×3 MESES ──
+        let grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px;';
+        for (let m = 0; m < 12; m++) grid.appendChild(_miniMesPDF(año, m, nombresMeses[m]));
+        wrap.appendChild(grid);
+
+        // ── PIE: FESTIVOS ──
+        wrap.appendChild(_pieFestivosPDF(año));
+        return wrap;
+    }
+
+    function _miniMesPDF(año, mes, nombreMes) {
+        let bgFest = { 'fest-nac': '#fee2e2', 'fest-prov': '#dcfce7', 'fest-loc': '#dbeafe' };
+        let brdEstado = { vaca: '#10b981', exc: '#f59e0b', med: '#ef4444', perm: '#a855f7', fest: '#f97316' };
+        let bgEstado  = { vaca: '#f0fdf4', exc: '#fffbeb', med: '#fff5f5', perm: '#faf5ff', fest: '#fff7ed' };
+
+        let bloque = document.createElement('div');
+        bloque.style.cssText = 'border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;background:#fff;';
+
+        let cab = document.createElement('div');
+        cab.style.cssText = 'background:#1e3a8a;color:#fff;text-align:center;padding:3px 0;font-size:9px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;';
+        cab.textContent = nombreMes;
+        bloque.appendChild(cab);
+
+        let g = document.createElement('div');
+        g.style.cssText = 'display:grid;grid-template-columns:16px repeat(7,1fr);';
+
+        // cabecera días
+        ['','L','M','X','J','V','S','D'].forEach(d => {
+            let h = document.createElement('div');
+            h.style.cssText = 'text-align:center;font-size:7px;font-weight:700;color:#64748b;padding:2px 0;background:#f8fafc;border-bottom:1px solid #e2e8f0;';
+            h.textContent = d;
+            g.appendChild(h);
+        });
+
+        let primerDia = new Date(Date.UTC(año, mes, 1));
+        let inicio = primerDia.getUTCDay() || 7;
+        let cursor = new Date(Date.UTC(año, mes, 1));
+        cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+
+        for (let f = 0; f < 6; f++) {
+            if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
+
+            let wk = document.createElement('div');
+            wk.style.cssText = 'text-align:center;font-size:6px;font-weight:700;color:#94a3b8;background:#f8fafc;display:flex;align-items:center;justify-content:center;border-right:1px solid #e2e8f0;';
+            wk.textContent = getNumeroSemana(cursor);
+            g.appendChild(wk);
+
+            for (let d = 0; d < 7; d++) {
+                let fStr = cursor.toISOString().split('T')[0];
+                let isOther = cursor.getUTCMonth() !== mes;
+                let bg = '#fff', brdTop = 'transparent';
+                let turnoTxt = '', festNom = '';
+
+                let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
+                if (festObj && !isOther) {
+                    bg = bgFest[festObj.tipo] || bg;
+                    festNom = festObj.nombre ? festObj.nombre.substring(0, 6) : '';
+                }
+                let estado = db.diasEspeciales[fStr];
+                if (estado && !isOther) {
+                    brdTop = brdEstado[estado] || '#ccc';
+                    if (!festObj) bg = bgEstado[estado] || bg;
+                }
+                let turnos = db.turnosTecnicos[fStr];
+                if (turnos && !isOther) turnoTxt = Object.values(turnos).join(',');
+
+                let cell = document.createElement('div');
+                cell.style.cssText =
+                    'min-height:18px;height:20px;padding:1px;background:' + bg +
+                    ';border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;' +
+                    'border-top:3px solid ' + (isOther ? 'transparent' : brdTop) +
+                    ';display:flex;flex-direction:column;align-items:center;justify-content:flex-start;' +
+                    'overflow:hidden;opacity:' + (isOther ? '0.25' : '1') + ';';
+
+                let num = document.createElement('div');
+                num.style.cssText = 'font-size:8px;font-weight:700;color:' + (isOther ? '#cbd5e1' : '#1e293b') + ';line-height:1;';
+                num.textContent = cursor.getUTCDate();
+                cell.appendChild(num);
+
+                if (turnoTxt) {
+                    let t = document.createElement('div');
+                    t.style.cssText = 'font-size:5.5px;font-weight:800;color:#0369a1;line-height:1;';
+                    t.textContent = turnoTxt;
+                    cell.appendChild(t);
+                } else if (festNom) {
+                    let fn = document.createElement('div');
+                    fn.style.cssText = 'font-size:5px;color:#374151;line-height:1;overflow:hidden;white-space:nowrap;max-width:100%;';
+                    fn.textContent = festNom;
+                    cell.appendChild(fn);
+                }
+
+                g.appendChild(cell);
+                cursor.setUTCDate(cursor.getUTCDate() + 1);
+            }
+        }
+        bloque.appendChild(g);
+        return bloque;
+    }
+
+    function _pieFestivosPDF(año) {
+        let mNom = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        let colTipo = { 'fest-nac': '#dc2626', 'fest-prov': '#16a34a', 'fest-loc': '#2563eb' };
+        let labelTipo = { 'fest-nac': 'NAC', 'fest-prov': 'AUT', 'fest-loc': 'LOC' };
+
+        let lista = [];
+        let vistos = new Set();
+        Object.keys(db.festivos).sort().forEach(key => {
+            let obj = db.festivos[key];
+            let fecha = key.startsWith('-') ? (año + key) : key;
+            if (!fecha.startsWith(año.toString())) return;
+            if (vistos.has(fecha)) return;
+            vistos.add(fecha);
+            let p = fecha.split('-');
+            lista.push({ fecha, dia: parseInt(p[2]), mes: parseInt(p[1]) - 1, nombre: obj.nombre || key, tipo: obj.tipo || 'fest-nac' });
+        });
+        lista.sort((a, b) => a.fecha.localeCompare(b.fecha));
+        if (!lista.length) return document.createElement('div');
+
+        let pie = document.createElement('div');
+        pie.style.cssText = 'border-top:1.5px solid #e2e8f0;padding-top:5px;';
+
+        let tit = document.createElement('div');
+        tit.style.cssText = 'font-size:8px;font-weight:800;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;';
+        tit.textContent = 'Festivos ' + año + ' · A Coruña — Convenio Metal';
+        pie.appendChild(tit);
+
+        let cols = document.createElement('div');
+        cols.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:2px 8px;';
+
+        lista.forEach(f => {
+            let item = document.createElement('div');
+            item.style.cssText = 'display:flex;align-items:baseline;gap:4px;font-size:7.5px;color:#374151;';
+            let fecha = document.createElement('span');
+            fecha.style.cssText = 'font-weight:800;color:#1e293b;white-space:nowrap;flex-shrink:0;min-width:55px;';
+            fecha.textContent = f.dia + ' ' + mNom[f.mes];
+            let nom = document.createElement('span');
+            nom.style.cssText = 'color:#374151;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+            nom.textContent = f.nombre;
+            let tp = document.createElement('span');
+            tp.style.cssText = 'font-size:6px;font-weight:800;color:' + (colTipo[f.tipo] || '#64748b') + ';flex-shrink:0;';
+            tp.textContent = labelTipo[f.tipo] || '';
+            item.appendChild(fecha); item.appendChild(nom); item.appendChild(tp);
+            cols.appendChild(item);
+        });
+        pie.appendChild(cols);
+        return pie;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // generarDocumentoWord — HTML descargable como .doc
+    // ─────────────────────────────────────────────────────────────────
+    function generarDocumentoWord(año) {
+        let nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        let mNom = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        let hoy = new Date().toLocaleDateString('es-ES');
+        let tecnPrincipal = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
+        let cVac = 0, cExc = 0;
+        Object.keys(db.diasEspeciales).forEach(k => {
+            if (k.startsWith(año.toString())) {
+                if (db.diasEspeciales[k] === 'vaca') cVac++;
+                if (db.diasEspeciales[k] === 'exc') cExc++;
+            }
+        });
+
+        let bgFest = { 'fest-nac': '#fee2e2', 'fest-prov': '#dcfce7', 'fest-loc': '#dbeafe' };
+        let brdEst = { vaca: '#10b981', exc: '#f59e0b', med: '#ef4444', perm: '#a855f7', fest: '#f97316' };
+
+        let mesesHtml = '';
+        // Grid 4×3 de meses
+        mesesHtml += '<table style="width:100%;border-collapse:separate;border-spacing:6px 6px;margin-bottom:10pt;">';
+        for (let fila = 0; fila < 3; fila++) {
+            mesesHtml += '<tr>';
+            for (let col = 0; col < 4; col++) {
+                let mes = fila * 4 + col;
+                let primerDia = new Date(Date.UTC(año, mes, 1));
+                let inicio = primerDia.getUTCDay() || 7;
+                let cursor = new Date(Date.UTC(año, mes, 1));
+                cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+
+                let mHtml = '<td style="vertical-align:top;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;width:25%;">' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><th colspan="8" style="background:#1e3a8a;color:#fff;text-align:center;font-size:8pt;padding:3pt 0;letter-spacing:0.5px;">' + nombresMeses[mes].toUpperCase() + '</th></tr>' +
+                    '<tr>' + ['','L','M','X','J','V','S','D'].map(d => '<th style="text-align:center;font-size:6.5pt;color:#64748b;background:#f8fafc;padding:1pt;border-bottom:1px solid #e2e8f0;width:' + (d===''?'14pt':'auto') + ';">' + d + '</th>').join('') + '</tr>';
+
+                for (let f = 0; f < 6; f++) {
+                    if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
+                    mHtml += '<tr><td style="text-align:center;font-size:5.5pt;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;padding:1pt;">' + getNumeroSemana(cursor) + '</td>';
+                    for (let d = 0; d < 7; d++) {
+                        let fStr = cursor.toISOString().split('T')[0];
+                        let isOther = cursor.getUTCMonth() !== mes;
+                        let bg = '#fff', bt = '';
+                        let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
+                        if (festObj && !isOther) bg = bgFest[festObj.tipo] || bg;
+                        let estado = db.diasEspeciales[fStr];
+                        if (estado && !isOther) bt = 'border-top:3pt solid ' + (brdEst[estado] || '#ccc') + ';';
+                        let turnos = db.turnosTecnicos[fStr];
+                        let turnoTxt = (turnos && !isOther) ? '<br><b style="color:#0369a1;font-size:5pt;">' + Object.values(turnos).join(',') + '</b>' : '';
+                        mHtml += '<td style="text-align:center;font-size:7pt;padding:1pt;border:1px solid #e2e8f0;background:' + bg + ';' + bt + (isOther?'color:#cbd5e1;':'') + '">' + cursor.getUTCDate() + turnoTxt + '</td>';
+                        cursor.setUTCDate(cursor.getUTCDate() + 1);
+                    }
+                    mHtml += '</tr>';
+                }
+                mHtml += '</table></td>';
+                mesesHtml += mHtml;
+            }
+            mesesHtml += '</tr>';
+        }
+        mesesHtml += '</table>';
+
+        let festivosHtml = '<h2 style="color:#1e3a8a;font-size:11pt;margin:8pt 0 4pt;">Festivos ' + año + ' · A Coruña (Convenio Metal)</h2><table style="border-collapse:collapse;width:100%;font-size:8pt;"><tr><th style="background:#1e3a8a;color:#fff;padding:3pt 6pt;text-align:left;">Fecha</th><th style="background:#1e3a8a;color:#fff;padding:3pt 6pt;">Festivo</th><th style="background:#1e3a8a;color:#fff;padding:3pt 6pt;">Tipo</th></tr>';
+        let vistos2 = new Set();
+        Object.keys(db.festivos).sort().forEach(key => {
+            let obj = db.festivos[key];
+            let fecha = key.startsWith('-') ? (año + key) : key;
+            if (!fecha.startsWith(año.toString()) || vistos2.has(fecha)) return;
+            vistos2.add(fecha);
+            let p = fecha.split('-'); let dia = parseInt(p[2]); let m = parseInt(p[1]) - 1;
+            let col = { 'fest-nac': '#dc2626', 'fest-prov': '#16a34a', 'fest-loc': '#2563eb' };
+            let lbl = { 'fest-nac': 'Nacional', 'fest-prov': 'Autonómico', 'fest-loc': 'Local' };
+            festivosHtml += '<tr><td style="padding:2pt 6pt;border:1px solid #e2e8f0;">' + dia + ' ' + mNom[m] + '</td><td style="padding:2pt 6pt;border:1px solid #e2e8f0;">' + (obj.nombre || key) + '</td><td style="padding:2pt 6pt;border:1px solid #e2e8f0;color:' + (col[obj.tipo] || '#374151') + ';font-weight:700;">' + (lbl[obj.tipo] || obj.tipo) + '</td></tr>';
+        });
+        festivosHtml += '</table>';
+
+        return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:12mm;}body{font-family:Calibri,Arial,sans-serif;margin:0;}table{page-break-inside:avoid;}</style></head><body>' +
+            '<h1 style="color:#1e3a8a;font-size:16pt;margin:0 0 2pt;">CALENDARIO LABORAL ' + año + (tecnPrincipal ? ' · ' + tecnPrincipal : '') + '</h1>' +
+            '<p style="color:#64748b;font-size:9pt;margin:0 0 4pt;">Convenio Metal A Coruña · Generado el ' + hoy + ' · Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (rest: ' + Math.max(0, db.config.vacTotales - cVac) + ') · Excesos: ' + cExc + '/' + db.config.excTotales + ' (rest: ' + Math.max(0, db.config.excTotales - cExc) + ')</p>' +
+            mesesHtml + festivosHtml + '</body></html>';
+    }
+
 
     function render() {
         const grid = document.getElementById('grid-calendario');
@@ -958,14 +1366,16 @@
 
         let nombresMeses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
         titulo.innerText = `${nombresMeses[mes]} ${año}`;
+        document.getElementById('select-ano-global').value = año;
 
         grid.innerHTML = '';
 
         // Cabeceras de días
-        grid.innerHTML += `<div class="grid-header">Sem</div>`;
-        let diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-        diasSemana.forEach(d => {
-            grid.innerHTML += `<div class="grid-header">${d}</div>`;
+        ["Sem","Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].forEach(label => {
+            let hd = document.createElement('div');
+            hd.className = 'grid-header';
+            hd.textContent = label;
+            grid.appendChild(hd);
         });
 
         let primerDiaMes = new Date(Date.UTC(año, mes, 1));
@@ -996,7 +1406,10 @@
             if(f > 0 && cursorGrid.getUTCFullYear() === año && cursorGrid.getUTCMonth() > mes) break;
             
             let numSemana = getNumeroSemana(cursorGrid);
-            grid.innerHTML += `<div class="wk-column">${numSemana}</div>`;
+            let wkDiv = document.createElement('div');
+            wkDiv.className = 'wk-column';
+            wkDiv.textContent = numSemana;
+            grid.appendChild(wkDiv);
 
             for(let d=0; d<7; d++) {
                 let cell = document.createElement('div');
@@ -1005,6 +1418,9 @@
 
                 let fStr = cursorGrid.toISOString().split('T')[0];
                 let sufijoAnual = fStr.substring(4);
+
+                let _t = new Date(); let _todayStr = _t.getFullYear() + '-' + String(_t.getMonth()+1).padStart(2,'0') + '-' + String(_t.getDate()).padStart(2,'0');
+                if (fStr === _todayStr) cell.classList.add('today-highlight');
 
                 cell.innerHTML = `<span class="day-num">${cursorGrid.getUTCDate()}</span>`;
 
