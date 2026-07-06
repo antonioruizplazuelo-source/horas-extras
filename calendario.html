@@ -345,6 +345,7 @@
                 <input type="date" id="seq-fecha-inicio" value="2026-06-29">
                 
                 <button class="btn-action" id="btn-proyectar">Proyectar Secuencia</button>
+                <button class="btn-action" id="btn-borrar-turnos" style="margin-top:6px;background:#fff;color:#ef4444;border:1.5px solid #ef4444;font-weight:700;" onclick="abrirModalBorrarTurnos()">🗑️ Borrar Turnos</button>
             </div>
         </aside>
 
@@ -370,7 +371,7 @@
                 <p style="font-size:0.75rem; color:var(--text-muted);">Genera un reporte apaisado horizontal con todos los turnos, excesos, festivos oficiales y vacaciones asignadas.</p>
                 <div class="export-btn-group">
                     <button class="btn-export-item" onclick="abrirFlujoExportacion('PDF')">📄 Exportar a PDF</button>
-                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Excel')">📊 Excel (.xlsx)</button>
+                    <button class="btn-export-item" onclick="abrirFlujoExportacion('Excel')">📊 Excel (.xls)</button>
                     <button class="btn-export-item" onclick="abrirFlujoExportacion('Imagen')">🖼️ Imagen (.png)</button>
                     <button class="btn-export-item" onclick="abrirFlujoExportacion('Word')">📝 Word (.doc)</button>
                 </div>
@@ -519,7 +520,7 @@
         </div>
         <div class="export-fmt-grid" id="export-fmt-grid">
             <button class="export-fmt-btn active" data-fmt="pdf" onclick="seleccionarFormato(this,'pdf')"><span class="fmt-icon">📄</span>PDF<br><small style="font-weight:400;color:#94a3b8;">Paisaje A4</small></button>
-            <button class="export-fmt-btn" data-fmt="xlsx" onclick="seleccionarFormato(this,'xlsx')"><span class="fmt-icon">📊</span>Excel<br><small style="font-weight:400;color:#94a3b8;">.xlsx</small></button>
+            <button class="export-fmt-btn" data-fmt="xls" onclick="seleccionarFormato(this,'xls')"><span class="fmt-icon">📊</span>Excel<br><small style="font-weight:400;color:#94a3b8;">.xls</small></button>
             <button class="export-fmt-btn" data-fmt="png" onclick="seleccionarFormato(this,'png')"><span class="fmt-icon">🖼️</span>Imagen<br><small style="font-weight:400;color:#94a3b8;">.png</small></button>
             <button class="export-fmt-btn" data-fmt="doc" onclick="seleccionarFormato(this,'doc')"><span class="fmt-icon">📝</span>Word<br><small style="font-weight:400;color:#94a3b8;">.doc</small></button>
         </div>
@@ -902,9 +903,9 @@
         btn.classList.add('active');
         extensionExportActual = fmt;
         let año = fechaActual.getFullYear();
-        let iconos = {pdf:'📄',xlsx:'📊',png:'🖼️',doc:'📝'};
-        let clases = {pdf:'pdf',xlsx:'xlsx',png:'png',doc:'doc'};
-        let nombres = {pdf:'Calendario Vacaciones ' + año + '.pdf', xlsx:'Calendario Vacaciones ' + año + '.xlsx', png:'Calendario Vacaciones ' + año + '.png', doc:'Calendario Vacaciones ' + año + '.doc'};
+        let iconos = {pdf:'📄',xls:'📊',png:'🖼️',doc:'📝'};
+        let clases = {pdf:'pdf',xls:'xls',png:'png',doc:'doc'};
+        let nombres = {pdf:'Calendario Vacaciones ' + año + '.pdf', xls:'Calendario Vacaciones ' + año + '.xls', png:'Calendario Vacaciones ' + año + '.png', doc:'Calendario Vacaciones ' + año + '.doc'};
         document.getElementById('export-modal-icon').textContent = iconos[fmt] || '📄';
         document.getElementById('export-modal-icon').className = 'modal-export-icon ' + (clases[fmt] || 'pdf');
         document.getElementById('export-file-name').value = nombres[fmt] || ('Calendario Vacaciones ' + año + '.' + fmt);
@@ -912,7 +913,7 @@
 
     window.abrirFlujoExportacion = function(tipo) {
         let año = fechaActual.getFullYear();
-        let mapaFmt = { 'PDF': 'pdf', 'Excel': 'xlsx', 'Imagen': 'png', 'Word': 'doc' };
+        let mapaFmt = { 'PDF': 'pdf', 'Excel': 'xls', 'Imagen': 'png', 'Word': 'doc' };
         extensionExportActual = mapaFmt[tipo] || 'pdf';
         document.getElementById('export-modal-year').textContent = año;
         // Activar botón correcto
@@ -923,7 +924,7 @@
         let clases = {pdf:'pdf',xlsx:'xlsx',png:'png',doc:'doc'};
         document.getElementById('export-modal-icon').textContent = iconos[extensionExportActual] || '📄';
         document.getElementById('export-modal-icon').className = 'modal-export-icon ' + (clases[extensionExportActual] || 'pdf');
-        let nombres = {pdf:'Calendario Vacaciones ' + año + '.pdf', xlsx:'Calendario Vacaciones ' + año + '.xlsx', png:'Calendario Vacaciones ' + año + '.png', doc:'Calendario Vacaciones ' + año + '.doc'};
+        let nombres = {pdf:'Calendario Vacaciones ' + año + '.pdf', xls:'Calendario Vacaciones ' + año + '.xls', png:'Calendario Vacaciones ' + año + '.png', doc:'Calendario Vacaciones ' + año + '.doc'};
         document.getElementById('export-file-name').value = nombres[extensionExportActual] || ('Calendario Vacaciones ' + año + '.' + extensionExportActual);
         document.getElementById('modal-export-save').style.display = 'flex';
     };
@@ -957,143 +958,17 @@
         _exportNombreArchivo = nombreArchivo;
         document.getElementById('modal-export-save').style.display = 'none';
 
-        if (extensionExportActual === 'xlsx') {
+        if (extensionExportActual === 'xls') {
             try {
-                var wb = XLSX.utils.book_new();
-                var año = fechaActual.getFullYear();
-                var nombresMesesXls = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                var diasSem = ['','L','M','X','J','V','S','D'];
-                var codEstado = { vaca:'VACACIONES', exc:'EXCESO', med:'BAJA', perm:'PERMISO', fest:'FESTIVO' };
-
-                // ── HOJA 1: CALENDARIO VISUAL ──
-                // Layout: 4 meses por fila, 3 filas. Cada mes ocupa 9 col (sem+7días+sep) y 9 filas.
-                // Offset col por mes en la fila: mes%4 * 9
-                // Offset fila por grupo: Math.floor(mes/4) * 10
-                var ws1 = {};
-                var maxC = 35, maxR = 29; // 4*9-1=35 cols, 3*10-1=29 rows
-
-                function xlCol(c) { return c < 26 ? String.fromCharCode(65+c) : String.fromCharCode(64+Math.floor(c/26)) + String.fromCharCode(65+(c%26)); }
-                function xlCell(r, c) { return xlCol(c) + (r+1); }
-                function setCell(r, c, v) { var addr = xlCell(r, c); ws1[addr] = { v: v, t: typeof v === 'number' ? 'n' : 's' }; }
-
-                var merges1 = [];
-
-                for (var mes = 0; mes < 12; mes++) {
-                    var colBase = (mes % 4) * 9;
-                    var rowBase = Math.floor(mes / 4) * 10;
-
-                    // Cabecera mes (col 0-7 del mes, row 0)
-                    setCell(rowBase, colBase, nombresMesesXls[mes].toUpperCase() + ' ' + año);
-                    merges1.push({ s: {r:rowBase, c:colBase}, e: {r:rowBase, c:colBase+7} });
-
-                    // Cabeceras días (row 1)
-                    diasSem.forEach(function(d, i) { setCell(rowBase+1, colBase+i, d || 'Sem'); });
-
-                    // Días del mes
-                    var primerDia = new Date(Date.UTC(año, mes, 1));
-                    var inicio = primerDia.getUTCDay() || 7;
-                    var cursor = new Date(Date.UTC(año, mes, 1));
-                    cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
-
-                    for (var f = 0; f < 6; f++) {
-                        if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
-                        setCell(rowBase+2+f, colBase, getNumeroSemana(cursor)); // nº semana
-                        for (var d = 0; d < 7; d++) {
-                            var fStr = cursor.toISOString().split('T')[0];
-                            var isOther = cursor.getUTCMonth() !== mes;
-                            if (isOther) { setCell(rowBase+2+f, colBase+1+d, ''); cursor.setUTCDate(cursor.getUTCDate()+1); continue; }
-
-                            var partes = [];
-                            partes.push(cursor.getUTCDate());
-
-                            var estado = db.diasEspeciales[fStr];
-                            if (estado) partes.push(codEstado[estado] || estado.toUpperCase());
-
-                            var festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
-                            if (festObj) partes.push(festObj.nombre ? festObj.nombre.substring(0,12) : 'FESTIVO');
-
-                            var turnos = db.turnosTecnicos[fStr];
-                            if (turnos) partes.push(Object.values(turnos).join('/'));
-
-                            setCell(rowBase+2+f, colBase+1+d, partes.join(' | '));
-                            cursor.setUTCDate(cursor.getUTCDate()+1);
-                        }
-                    }
-                }
-                ws1['!ref'] = 'A1:' + xlCol(maxC) + '30';
-                ws1['!merges'] = merges1;
-                // Anchos de columna: col separadora ancha, resto igual
-                var colWidths = [];
-                for (var ci = 0; ci < 36; ci++) {
-                    var posEnMes = ci % 9;
-                    colWidths.push({ wch: posEnMes === 0 ? 4 : posEnMes === 8 ? 1 : 16 });
-                }
-                ws1['!cols'] = colWidths;
-                // Altos de fila
-                var rowHeights = [];
-                for (var ri = 0; ri < 30; ri++) {
-                    var posEnGrupo = ri % 10;
-                    rowHeights.push({ hpt: posEnGrupo === 0 ? 18 : posEnGrupo === 9 ? 6 : 36 });
-                }
-                ws1['!rows'] = rowHeights;
-                XLSX.utils.book_append_sheet(wb, ws1, 'Calendario ' + año);
-
-                // ── HOJA 2: FESTIVOS ──
-                var festData = [['Fecha', 'Día', 'Festivo', 'Tipo']];
-                var mNomXls = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                var tipoLblXls = {'fest-nac':'Nacional','fest-prov':'Autonómico','fest-loc':'Local'};
-                var vistosXls = new Set();
-                Object.keys(db.festivos).sort().forEach(function(key) {
-                    var obj = db.festivos[key];
-                    var fecha = key.startsWith('-') ? (año + key) : key;
-                    if (!fecha.startsWith(año.toString()) || vistosXls.has(fecha)) return;
-                    vistosXls.add(fecha);
-                    var p = fecha.split('-');
-                    festData.push([fecha, parseInt(p[2]) + ' ' + mNomXls[parseInt(p[1])-1], obj.nombre || key, tipoLblXls[obj.tipo] || obj.tipo]);
-                });
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(festData), 'Festivos');
-
-                // ── HOJA 3: VACACIONES Y EXCESOS ──
-                var cVacXls = 0, cExcXls = 0;
-                var diasData = [['Fecha', 'Estado', 'Turno']];
-                Object.keys(db.diasEspeciales).sort().forEach(function(k) {
-                    if (!k.startsWith(año.toString())) return;
-                    if (db.diasEspeciales[k] === 'vaca') cVacXls++;
-                    if (db.diasEspeciales[k] === 'exc') cExcXls++;
-                    var turnos2 = db.turnosTecnicos[k];
-                    diasData.push([k, codEstado[db.diasEspeciales[k]] || db.diasEspeciales[k], turnos2 ? Object.values(turnos2).join('/') : '']);
-                });
-                diasData.splice(1, 0,
-                    ['VACACIONES USADAS', cVacXls, 'de ' + db.config.vacTotales + ' (restan ' + Math.max(0,db.config.vacTotales-cVacXls) + ')'],
-                    ['EXCESOS USADOS', cExcXls, 'de ' + db.config.excTotales + ' (restan ' + Math.max(0,db.config.excTotales-cExcXls) + ')'],
-                    []
-                );
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(diasData), 'Resumen');
-
-                // ── HOJA 4: LEYENDA ──
-                var leyData = [
-                    ['Código','Significado','Color indicador'],
-                    ['VACACIONES','Día de vacaciones asignado','Borde verde superior (#10b981)'],
-                    ['EXCESO','Exceso de horas','Borde naranja superior (#f59e0b)'],
-                    ['BAJA','Baja médica','Borde rojo superior (#ef4444)'],
-                    ['PERMISO','Permiso retribuido','Borde morado superior (#a855f7)'],
-                    ['FESTIVO','Festivo editable','Borde naranja oscuro superior (#f97316)'],
-                    [],
-                    ['Festivos marcados con fondo:','',''],
-                    ['Nacional','Fondo rojo claro (#fee2e2)',''],
-                    ['Autonómico','Fondo verde claro (#dcfce7)',''],
-                    ['Local','Fondo azul claro (#dbeafe)',''],
-                ];
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(leyData), 'Leyenda');
-
-                var xlsxData = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                var xlsxBlob = new Blob([xlsxData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                descargarBlob(xlsxBlob, nombreArchivo);
-                mostrarExito('📊', 'Excel con calendario completo, festivos, resumen de vacaciones y leyenda.');
-            } catch(xlsxErr) {
-                alert('Error al generar Excel: ' + xlsxErr.message);
+                var xlsHtml = generarDocumentoExcel(fechaActual.getFullYear());
+                var xlsBlob = new Blob([xlsHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                descargarBlob(xlsBlob, nombreArchivo);
+                mostrarExito('\u{1F4CA}', 'Excel con el calendario anual completo, colores y turnos.');
+            } catch(xlsErr) {
+                alert('Error al generar Excel: ' + xlsErr.message);
             }
 
+        } else if (extensionExportActual === 'doc') {
         } else if (extensionExportActual === 'doc') {
             try {
                 var docHtml = generarDocumentoWord(fechaActual.getFullYear());
@@ -1112,7 +987,7 @@
 
             // Usar html2canvas + jsPDF directamente (bundle html2pdf los expone como globals)
             window.html2canvas(contenedor, {
-                scale: 3,
+                scale: 2,
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
@@ -1128,43 +1003,51 @@
                     }, 'image/png');
                 } else {
                     // PDF: una sola página A4 landscape con el canvas escalado
-                    var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-                    if (!jsPDF) {
-                        // fallback via html2pdf si jsPDF no está expuesto
-                        var imgData = canvas.toDataURL('image/jpeg', 0.96);
-                        // generar pdf de una sola página con html via iframe temporal
-                        var container2 = document.createElement('div');
-                        var img = document.createElement('img');
-                        img.src = imgData;
-                        img.style.cssText = 'width:100%;display:block;';
-                        container2.appendChild(img);
-                        html2pdf().set({
-                            margin: 5,
-                            filename: nombreArchivo,
-                            image: { type: 'jpeg', quality: 0.96 },
-                            html2canvas: { scale: 1 },
-                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-                        }).from(container2).outputPdf('blob').then(function(blob) {
-                            descargarBlob(blob, nombreArchivo);
-                            mostrarExito('📄', 'PDF A4 horizontal con los 12 meses, leyenda y festivos.');
-                        });
-                        return;
+                    try {
+                        var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+                        if (!jsPDF) {
+                            // fallback via html2pdf si jsPDF no está expuesto
+                            var imgDataFb = canvas.toDataURL('image/jpeg', 0.95);
+                            var container2 = document.createElement('div');
+                            var imgFb = document.createElement('img');
+                            imgFb.src = imgDataFb;
+                            imgFb.style.cssText = 'width:100%;display:block;';
+                            container2.appendChild(imgFb);
+                            html2pdf().set({
+                                margin: 5,
+                                filename: nombreArchivo,
+                                image: { type: 'jpeg', quality: 0.95 },
+                                html2canvas: { scale: 1 },
+                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                            }).from(container2).outputPdf('blob').then(function(blob) {
+                                descargarBlob(blob, nombreArchivo);
+                                mostrarExito('\u{1F4C4}', 'PDF A4 horizontal con los 12 meses, leyenda y festivos.');
+                            });
+                            return;
+                        }
+                        var pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                        var pW = pdf.internal.pageSize.getWidth();   // 297
+                        var pH = pdf.internal.pageSize.getHeight();  // 210
+                        var margin = 6;
+                        var aW = pW - 2 * margin;
+                        var aH = pH - 2 * margin;
+                        var ratio = canvas.height / canvas.width;
+                        var iW = aW, iH = aW * ratio;
+                        if (iH > aH) { iH = aH; iW = aH / ratio; }
+                        var x = margin + (aW - iW) / 2;
+                        // JPEG (no PNG) para evitar archivos enormes que causan paginación
+                        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        pdf.addImage(imgData, 'JPEG', x, margin, iW, iH);
+                        // Garantizar una sola página: eliminar extras si existen
+                        while (pdf.getNumberOfPages() > 1) {
+                            pdf.deletePage(pdf.getNumberOfPages());
+                        }
+                        var pdfBlob = pdf.output('blob');
+                        descargarBlob(pdfBlob, nombreArchivo);
+                        mostrarExito('\u{1F4C4}', 'PDF A4 horizontal con los 12 meses, leyenda y festivos. Una sola p\u00E1gina.');
+                    } catch(pdfErr) {
+                        alert('Error al generar PDF: ' + (pdfErr && pdfErr.message ? pdfErr.message : pdfErr));
                     }
-                    var pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                    var pW = pdf.internal.pageSize.getWidth();   // 297
-                    var pH = pdf.internal.pageSize.getHeight();  // 210
-                    var margin = 6;
-                    var aW = pW - 2 * margin;
-                    var aH = pH - 2 * margin;
-                    var ratio = canvas.height / canvas.width;
-                    var iW = aW, iH = aW * ratio;
-                    if (iH > aH) { iH = aH; iW = aH / ratio; }
-                    var x = margin + (aW - iW) / 2;
-                    var imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', x, margin, iW, iH);
-                    var pdfBlob = pdf.output('blob');
-                    descargarBlob(pdfBlob, nombreArchivo);
-                    mostrarExito('📄', 'PDF A4 horizontal con los 12 meses, leyenda y festivos. Una sola página.');
                 }
             }).catch(function(err) {
                 if (document.body.contains(contenedor)) document.body.removeChild(contenedor);
@@ -1442,6 +1325,105 @@
     }
 
     // ─────────────────────────────────────────────────────────────────
+    // generarDocumentoExcel — HTML descargable como .xls (con colores y turnos)
+    // ─────────────────────────────────────────────────────────────────
+    function generarDocumentoExcel(año) {
+        let nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        let mNom = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        let hoy = new Date().toLocaleDateString('es-ES');
+        let tecnPrincipal = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
+        let cVac = 0, cExc = 0;
+        Object.keys(db.diasEspeciales).forEach(function(k) {
+            if (k.startsWith(año.toString())) {
+                if (db.diasEspeciales[k] === 'vaca') cVac++;
+                if (db.diasEspeciales[k] === 'exc') cExc++;
+            }
+        });
+
+        let bgFest = { 'fest-nac': '#fee2e2', 'fest-prov': '#dcfce7', 'fest-loc': '#dbeafe' };
+        let brdEst = { vaca: '#10b981', exc: '#f59e0b', med: '#ef4444', perm: '#a855f7', fest: '#f97316' };
+        let lblEst = { vaca: 'VAC', exc: 'EXC', med: 'BAJA', perm: 'PERM', fest: 'FEST' };
+
+        let mesesHtml = '';
+        mesesHtml += '<table style="width:100%;border-collapse:separate;border-spacing:4px 4px;margin-bottom:8pt;">';
+        for (let fila = 0; fila < 3; fila++) {
+            mesesHtml += '<tr>';
+            for (let col = 0; col < 4; col++) {
+                let mes = fila * 4 + col;
+                let primerDia = new Date(Date.UTC(año, mes, 1));
+                let inicio = primerDia.getUTCDay() || 7;
+                let cursor = new Date(Date.UTC(año, mes, 1));
+                cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+
+                let mHtml = '<td style="vertical-align:top;border:1px solid #cbd5e1;width:25%;">' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><th colspan="8" style="background:#1e3a8a;color:#ffffff;text-align:center;font-size:8pt;padding:3pt 0;">' + nombresMeses[mes].toUpperCase() + '</th></tr>' +
+                    '<tr>' + ['','L','M','X','J','V','S','D'].map(function(d) { return '<th style="text-align:center;font-size:6pt;color:#64748b;background:#f8fafc;padding:1pt;border-bottom:1px solid #e2e8f0;">' + (d||'Sem') + '</th>'; }).join('') + '</tr>';
+
+                for (let f = 0; f < 6; f++) {
+                    if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
+                    mHtml += '<tr><td style="text-align:center;font-size:5pt;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;padding:1pt;">' + getNumeroSemana(cursor) + '</td>';
+                    for (let d = 0; d < 7; d++) {
+                        let fStr = cursor.toISOString().split('T')[0];
+                        let isOther = cursor.getUTCMonth() !== mes;
+                        let bg = '#ffffff', borderTop = '';
+                        let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
+                        if (festObj && !isOther) bg = bgFest[festObj.tipo] || bg;
+                        let estado = db.diasEspeciales[fStr];
+                        if (estado && !isOther) borderTop = 'border-top:3pt solid ' + (brdEst[estado] || '#ccc') + ';';
+                        let turnos = db.turnosTecnicos[fStr];
+                        let estTxt = (estado && !isOther) ? '<div style="font-size:5pt;color:' + (brdEst[estado]||'#555') + ';font-weight:bold;line-height:1;">' + (lblEst[estado]||estado.toUpperCase()) + '</div>' : '';
+                        let turnoTxt = (turnos && !isOther) ? '<div style="font-size:6pt;color:#0369a1;font-weight:bold;line-height:1;">' + Object.values(turnos).join(',') + '</div>' : '';
+                        let cellStyle = 'text-align:center;font-size:7pt;padding:1pt;border:1px solid #e2e8f0;background:' + bg + ';' + borderTop + (isOther ? 'color:#cbd5e1;' : '');
+                        mHtml += '<td style="' + cellStyle + '">' + cursor.getUTCDate() + estTxt + turnoTxt + '</td>';
+                        cursor.setUTCDate(cursor.getUTCDate() + 1);
+                    }
+                    mHtml += '</tr>';
+                }
+                mHtml += '</table></td>';
+                mesesHtml += mHtml;
+            }
+            mesesHtml += '</tr>';
+        }
+        mesesHtml += '</table>';
+
+        // Leyenda
+        let leyHtml = '<table style="border-collapse:collapse;width:100%;font-size:7pt;margin-bottom:6pt;"><tr>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#10b981;margin-right:3pt;vertical-align:middle;"></span>Vacaciones</td>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#f59e0b;margin-right:3pt;vertical-align:middle;"></span>Exceso horas</td>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#ef4444;margin-right:3pt;vertical-align:middle;"></span>Baja médica</td>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#a855f7;margin-right:3pt;vertical-align:middle;"></span>Permiso</td>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#fee2e2;margin-right:3pt;vertical-align:middle;"></span>Festivo Nac.</td>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#dcfce7;margin-right:3pt;vertical-align:middle;"></span>Festivo Auton.</td>' +
+            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#dbeafe;margin-right:3pt;vertical-align:middle;"></span>Festivo Local</td>' +
+            '</tr></table>';
+
+        // Festivos
+        let festivosHtml = '<h3 style="color:#1e3a8a;font-size:9pt;margin:4pt 0 2pt;">Festivos ' + año + ' · A Coru\u00F1a (Convenio Metal)</h3><table style="border-collapse:collapse;width:100%;font-size:7pt;"><tr><th style="background:#1e3a8a;color:#ffffff;padding:2pt 5pt;text-align:left;">Fecha</th><th style="background:#1e3a8a;color:#ffffff;padding:2pt 5pt;">Festivo</th><th style="background:#1e3a8a;color:#ffffff;padding:2pt 5pt;">Tipo</th></tr>';
+        let vistos2 = new Set();
+        Object.keys(db.festivos).sort().forEach(function(key) {
+            let obj = db.festivos[key];
+            let fecha = key.startsWith('-') ? (año + key) : key;
+            if (!fecha.startsWith(año.toString()) || vistos2.has(fecha)) return;
+            vistos2.add(fecha);
+            let p = fecha.split('-'); let dia = parseInt(p[2]); let m = parseInt(p[1]) - 1;
+            let col = { 'fest-nac': '#dc2626', 'fest-prov': '#16a34a', 'fest-loc': '#2563eb' };
+            let lbl = { 'fest-nac': 'Nacional', 'fest-prov': 'Auton\u00F3mico', 'fest-loc': 'Local' };
+            festivosHtml += '<tr><td style="padding:1pt 5pt;border:1px solid #e2e8f0;">' + dia + ' ' + mNom[m] + '</td><td style="padding:1pt 5pt;border:1px solid #e2e8f0;">' + (obj.nombre || key) + '</td><td style="padding:1pt 5pt;border:1px solid #e2e8f0;color:' + (col[obj.tipo] || '#374151') + ';font-weight:700;">' + (lbl[obj.tipo] || obj.tipo) + '</td></tr>';
+        });
+        festivosHtml += '</table>';
+
+        return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8">' +
+            '<xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Calendario ' + año + '</x:Name>' +
+            '<x:WorksheetOptions><x:Print><x:ValidPrinterInfo/><x:PaperSizeIndex>9</x:PaperSizeIndex><x:HorizontalResolution>600</x:HorizontalResolution><x:VerticalResolution>600</x:VerticalResolution></x:Print><x:Selected/><x:ProtectContents>False</x:ProtectContents><x:ProtectObjects>False</x:ProtectObjects><x:ProtectScenarios>False</x:ProtectScenarios></x:WorksheetOptions>' +
+            '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml>' +
+            '<style>body{font-family:Calibri,Arial,sans-serif;margin:0;}table{border-collapse:collapse;}td,th{mso-number-format:"@";}</style>' +
+            '</head><body>' +
+            '<h1 style="color:#1e3a8a;font-size:14pt;margin:0 0 2pt;">CALENDARIO LABORAL ' + año + (tecnPrincipal ? ' · ' + tecnPrincipal : '') + '</h1>' +
+            '<p style="color:#64748b;font-size:8pt;margin:0 0 4pt;">Convenio Metal A Coru\u00F1a · Generado el ' + hoy + ' · Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (rest: ' + Math.max(0, db.config.vacTotales - cVac) + ') · Excesos: ' + cExc + '/' + db.config.excTotales + ' (rest: ' + Math.max(0, db.config.excTotales - cExc) + ')</p>' +
+            leyHtml + mesesHtml + festivosHtml + '</body></html>';
+    }
+
     // generarDocumentoWord — HTML descargable como .doc
     // ─────────────────────────────────────────────────────────────────
     function generarDocumentoWord(año) {
@@ -1489,7 +1471,7 @@
                         let estado = db.diasEspeciales[fStr];
                         if (estado && !isOther) bt = 'border-top:3pt solid ' + (brdEst[estado] || '#ccc') + ';';
                         let turnos = db.turnosTecnicos[fStr];
-                        let turnoTxt = (turnos && !isOther) ? '<br><b style="color:#0369a1;font-size:5pt;">' + Object.values(turnos).join(',') + '</b>' : '';
+                        let turnoTxt = (turnos && !isOther) ? '<br><b style="color:#0369a1;font-size:8pt;">' + Object.values(turnos).join(',') + '</b>' : '';
                         mHtml += '<td style="text-align:center;font-size:7pt;padding:1pt;border:1px solid #e2e8f0;background:' + bg + ';' + bt + (isOther?'color:#cbd5e1;':'') + '">' + cursor.getUTCDate() + turnoTxt + '</td>';
                         cursor.setUTCDate(cursor.getUTCDate() + 1);
                     }
@@ -1832,6 +1814,212 @@
         return grid;
     }
 
+    // ── BORRAR TURNOS ──────────────────────────────────────────
+    var _brtTabActual = 'año';
+
+    window.abrirModalBorrarTurnos = function() {
+        // Poblar técnicos
+        var sel = document.getElementById('brt-tec-select');
+        sel.innerHTML = '';
+        (db.tecnicos || []).forEach(function(t) {
+            var o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
+        });
+        if (!sel.options.length) {
+            var o = document.createElement('option'); o.value = '__all__'; o.textContent = 'Todos los técnicos'; sel.appendChild(o);
+        }
+        // Poblar meses
+        var año = fechaActual.getFullYear();
+        var grid = document.getElementById('brt-meses-grid');
+        grid.innerHTML = '';
+        var nomMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        nomMeses.forEach(function(nm, i) {
+            var lbl = document.createElement('label');
+            lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600;color:#374151;user-select:none;';
+            lbl.innerHTML = '<input type="checkbox" value="' + i + '" style="accent-color:#ef4444;cursor:pointer;"> ' + nm.substring(0,3);
+            grid.appendChild(lbl);
+        });
+        // Rango semanas — por defecto primer lunes del año actual
+        var primerLunes = new Date(Date.UTC(año, 0, 1));
+        while (primerLunes.getUTCDay() !== 1) primerLunes.setUTCDate(primerLunes.getUTCDate() + 1);
+        document.getElementById('brt-desde').value = primerLunes.toISOString().split('T')[0];
+        var ultimoDom = new Date(Date.UTC(año, 11, 31));
+        while (ultimoDom.getUTCDay() !== 0) ultimoDom.setUTCDate(ultimoDom.getUTCDate() - 1);
+        document.getElementById('brt-hasta').value = ultimoDom.toISOString().split('T')[0];
+        brtCambiarTab('año');
+        document.getElementById('modal-borrar-turnos').style.display = 'flex';
+    };
+
+    window.cerrarModalBorrarTurnos = function() {
+        document.getElementById('modal-borrar-turnos').style.display = 'none';
+    };
+
+    window.brtCambiarTab = function(tab) {
+        _brtTabActual = tab;
+        var tabs = ['año','meses','semanas'];
+        tabs.forEach(function(t) {
+            var lbl = document.getElementById('brt-tab-' + t);
+            var panel = document.getElementById('brt-panel-' + t);
+            if (t === tab) {
+                lbl.style.background = '#1e3a8a'; lbl.style.color = '#fff'; lbl.style.borderColor = '#1e3a8a';
+                panel.style.display = '';
+            } else {
+                lbl.style.background = '#f1f5f9'; lbl.style.color = '#475569'; lbl.style.borderColor = '#e2e8f0';
+                panel.style.display = 'none';
+            }
+        });
+        // Actualizar texto informativo
+        var año = fechaActual.getFullYear();
+        var tec = document.getElementById('brt-tec-select').value;
+        if (tab === 'año') {
+            var count = Object.keys(db.turnosTecnicos).filter(function(k) {
+                return k.startsWith(año + '') && db.turnosTecnicos[k][tec];
+            }).length;
+            document.getElementById('brt-año-txt').textContent = 'Se borrarán los turnos de ' + tec + ' en todo el año ' + año + ' (' + count + ' días asignados).';
+        }
+        if (tab === 'semanas') {
+            brtActualizarInfoSemanas();
+        }
+    };
+
+    document.addEventListener('change', function(e) {
+        if (e.target && (e.target.id === 'brt-desde' || e.target.id === 'brt-hasta')) brtActualizarInfoSemanas();
+        if (e.target && e.target.id === 'brt-tec-select') brtCambiarTab(_brtTabActual);
+    });
+
+    function brtActualizarInfoSemanas() {
+        var desde = document.getElementById('brt-desde').value;
+        var hasta = document.getElementById('brt-hasta').value;
+        var tec = document.getElementById('brt-tec-select').value;
+        if (!desde || !hasta) return;
+        var d = new Date(desde + 'T00:00:00Z');
+        var h = new Date(hasta + 'T00:00:00Z');
+        var count = 0;
+        var cur = new Date(d);
+        while (cur <= h) {
+            var fStr = cur.toISOString().split('T')[0];
+            if (db.turnosTecnicos[fStr] && db.turnosTecnicos[fStr][tec]) count++;
+            cur.setUTCDate(cur.getUTCDate() + 1);
+        }
+        var semanas = Math.ceil((h - d + 86400000) / (7 * 86400000));
+        document.getElementById('brt-sem-info').textContent = 'Rango: ' + semanas + ' semana(s) · ' + count + ' días con turno asignado a ' + tec + '.';
+    }
+
+    window.confirmarBorrarTurnos = function() {
+        var tec = document.getElementById('brt-tec-select').value;
+        var año = fechaActual.getFullYear();
+        var eliminados = 0;
+
+        if (_brtTabActual === 'año') {
+            Object.keys(db.turnosTecnicos).forEach(function(k) {
+                if (k.startsWith(año + '') && db.turnosTecnicos[k][tec]) {
+                    delete db.turnosTecnicos[k][tec];
+                    if (!Object.keys(db.turnosTecnicos[k]).length) delete db.turnosTecnicos[k];
+                    eliminados++;
+                }
+            });
+        } else if (_brtTabActual === 'meses') {
+            var selMeses = Array.from(document.querySelectorAll('#brt-meses-grid input:checked')).map(function(cb) { return parseInt(cb.value); });
+            if (!selMeses.length) { alert('Selecciona al menos un mes.'); return; }
+            Object.keys(db.turnosTecnicos).forEach(function(k) {
+                if (!k.startsWith(año + '')) return;
+                var mesK = parseInt(k.split('-')[1]) - 1;
+                if (selMeses.includes(mesK) && db.turnosTecnicos[k][tec]) {
+                    delete db.turnosTecnicos[k][tec];
+                    if (!Object.keys(db.turnosTecnicos[k]).length) delete db.turnosTecnicos[k];
+                    eliminados++;
+                }
+            });
+        } else if (_brtTabActual === 'semanas') {
+            var desde = document.getElementById('brt-desde').value;
+            var hasta = document.getElementById('brt-hasta').value;
+            if (!desde || !hasta) { alert('Indica el rango de fechas.'); return; }
+            var d = new Date(desde + 'T00:00:00Z');
+            var h = new Date(hasta + 'T00:00:00Z');
+            var cur = new Date(d);
+            while (cur <= h) {
+                var fStr = cur.toISOString().split('T')[0];
+                if (db.turnosTecnicos[fStr] && db.turnosTecnicos[fStr][tec]) {
+                    delete db.turnosTecnicos[fStr][tec];
+                    if (!Object.keys(db.turnosTecnicos[fStr]).length) delete db.turnosTecnicos[fStr];
+                    eliminados++;
+                }
+                cur.setUTCDate(cur.getUTCDate() + 1);
+            }
+        }
+
+        save();
+        render();
+        cerrarModalBorrarTurnos();
+
+        // Mini notificación de éxito
+        var toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 22px;border-radius:14px;font-size:0.88rem;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;white-space:nowrap;';
+        toast.innerHTML = '✅ <span>' + eliminados + ' turno(s) eliminado(s) de <b>' + tec + '</b></span>';
+        document.body.appendChild(toast);
+        setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
+    };
+    // ────────────────────────────────────────────────────────────
+
 </script>
+
+<!-- ══ MODAL BORRAR TURNOS ══ -->
+<div id="modal-borrar-turnos" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:#fff;border-radius:20px;padding:28px;max-width:480px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+      <div style="width:48px;height:48px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🗑️</div>
+      <div>
+        <div style="font-size:1.1rem;font-weight:800;color:#0f172a;">Borrar Turnos</div>
+        <div style="font-size:0.82rem;color:#64748b;">Elimina los turnos asignados al técnico seleccionado</div>
+      </div>
+    </div>
+
+    <!-- Técnico -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:0.82rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Técnico</label>
+      <select id="brt-tec-select" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:0.9rem;background:#f8fafc;"></select>
+    </div>
+
+    <!-- Alcance -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:0.82rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Alcance del borrado</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <label id="brt-tab-año" class="brt-tab brt-tab-active" onclick="brtCambiarTab('año')" style="cursor:pointer;padding:7px 14px;border-radius:10px;font-size:0.85rem;font-weight:700;background:#1e3a8a;color:#fff;border:2px solid #1e3a8a;">📅 Año completo</label>
+        <label id="brt-tab-meses" class="brt-tab" onclick="brtCambiarTab('meses')" style="cursor:pointer;padding:7px 14px;border-radius:10px;font-size:0.85rem;font-weight:700;background:#f1f5f9;color:#475569;border:2px solid #e2e8f0;">📆 Por meses</label>
+        <label id="brt-tab-semanas" class="brt-tab" onclick="brtCambiarTab('semanas')" style="cursor:pointer;padding:7px 14px;border-radius:10px;font-size:0.85rem;font-weight:700;background:#f1f5f9;color:#475569;border:2px solid #e2e8f0;">🗓️ Por semanas</label>
+      </div>
+    </div>
+
+    <!-- Panel año -->
+    <div id="brt-panel-año" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:14px;margin-bottom:16px;">
+      <p id="brt-año-txt" style="margin:0;font-size:0.88rem;color:#991b1b;font-weight:600;text-align:center;"></p>
+    </div>
+
+    <!-- Panel meses -->
+    <div id="brt-panel-meses" style="display:none;margin-bottom:16px;">
+      <div id="brt-meses-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+    </div>
+
+    <!-- Panel semanas (rango de fechas) -->
+    <div id="brt-panel-semanas" style="display:none;margin-bottom:16px;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:140px;">
+          <label style="font-size:0.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">Desde (lunes)</label>
+          <input type="date" id="brt-desde" style="width:100%;padding:7px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+        </div>
+        <div style="flex:1;min-width:140px;">
+          <label style="font-size:0.78rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">Hasta (domingo)</label>
+          <input type="date" id="brt-hasta" style="width:100%;padding:7px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+        </div>
+      </div>
+      <p id="brt-sem-info" style="margin:8px 0 0;font-size:0.78rem;color:#64748b;text-align:center;"></p>
+    </div>
+
+    <!-- Botones acción -->
+    <div style="display:flex;gap:10px;">
+      <button onclick="cerrarModalBorrarTurnos()" style="flex:1;padding:11px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f8fafc;color:#64748b;font-size:0.9rem;font-weight:700;cursor:pointer;">Cancelar</button>
+      <button id="brt-btn-confirmar" onclick="confirmarBorrarTurnos()" style="flex:2;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;">🗑️ Borrar ahora</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
