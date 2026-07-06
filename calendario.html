@@ -6,6 +6,8 @@
     <title>Calendario Laboral Turnos</title>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -979,50 +981,91 @@
                 });
             });
             XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsTurnosData), 'Cuadrante de Turnos');
-            let xlsxBlob = new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })],
-                { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            descargarBlob(xlsxBlob, nombreArchivo);
-            mostrarExito('📊', 'Hoja de cálculo con Configuración, Días Especiales y Cuadrante de Turnos.');
+            try {
+                var xlsxData = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                var xlsxBlob = new Blob([xlsxData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                descargarBlob(xlsxBlob, nombreArchivo);
+                mostrarExito('📊', 'Hoja de cálculo con Configuración, Días Especiales y Cuadrante de Turnos.');
+            } catch(xlsxErr) {
+                alert('Error al generar Excel: ' + xlsxErr.message);
+            }
 
         } else if (extensionExportActual === 'doc') {
-            let docHtml = generarDocumentoWord(fechaActual.getFullYear());
-            let blob = new Blob([docHtml], { type: 'application/msword' });
-            descargarBlob(blob, nombreArchivo);
-            mostrarExito('📝', 'Documento Word con el calendario anual y lista de festivos.');
+            try {
+                var docHtml = generarDocumentoWord(fechaActual.getFullYear());
+                var wordBlob = new Blob([docHtml], { type: 'application/msword' });
+                descargarBlob(wordBlob, nombreArchivo);
+                mostrarExito('📝', 'Documento Word con el calendario anual y lista de festivos.');
+            } catch(wordErr) {
+                alert('Error al generar Word: ' + wordErr.message);
+            }
 
         } else if (extensionExportActual === 'pdf' || extensionExportActual === 'png') {
             let contenedor = generarDocumentoPDF(fechaActual.getFullYear());
-            // Insertar en DOM oculto para que el layout calcule tamaños
-            contenedor.style.position = 'fixed';
-            contenedor.style.left = '-9999px';
-            contenedor.style.top = '0';
-            contenedor.style.zIndex = '-1';
+            // Insertar en DOM visible (fuera de pantalla) para que el layout compute
+            contenedor.style.cssText += ';position:fixed;left:-9999px;top:0;';
             document.body.appendChild(contenedor);
 
-            let opt = {
-                margin: 5,
-                filename: nombreArchivo,
-                image: { type: 'jpeg', quality: 0.97 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                pagebreak: { mode: [] }
-            };
+            // Usar html2canvas + jsPDF directamente (bundle html2pdf los expone como globals)
+            window.html2canvas(contenedor, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                allowTaint: true
+            }).then(function(canvas) {
+                document.body.removeChild(contenedor);
 
-            if (extensionExportActual === 'pdf') {
-                html2pdf().set(opt).from(contenedor).outputPdf('blob').then(pdfBlob => {
-                    document.body.removeChild(contenedor);
-                    descargarBlob(pdfBlob, nombreArchivo);
-                    mostrarExito('📄', 'PDF en paisaje A4 con los 12 meses, leyenda y festivos.');
-                }).catch(() => document.body.removeChild(contenedor));
-            } else {
-                html2pdf().set(opt).from(contenedor).outputImg().then(img => {
-                    document.body.removeChild(contenedor);
-                    fetch(img.src).then(r => r.blob()).then(pngBlob => {
+                if (extensionExportActual === 'png') {
+                    // PNG: blob directo del canvas
+                    canvas.toBlob(function(pngBlob) {
                         descargarBlob(pngBlob, nombreArchivo);
-                        mostrarExito('🖼️', 'Imagen PNG del calendario anual generada.');
-                    });
-                }).catch(() => document.body.removeChild(contenedor));
-            }
+                        mostrarExito('🖼️', 'Imagen PNG del calendario anual con los 12 meses.');
+                    }, 'image/png');
+                } else {
+                    // PDF: una sola página A4 landscape con el canvas escalado
+                    var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+                    if (!jsPDF) {
+                        // fallback via html2pdf si jsPDF no está expuesto
+                        var imgData = canvas.toDataURL('image/jpeg', 0.96);
+                        // generar pdf de una sola página con html via iframe temporal
+                        var container2 = document.createElement('div');
+                        var img = document.createElement('img');
+                        img.src = imgData;
+                        img.style.cssText = 'width:100%;display:block;';
+                        container2.appendChild(img);
+                        html2pdf().set({
+                            margin: 5,
+                            filename: nombreArchivo,
+                            image: { type: 'jpeg', quality: 0.96 },
+                            html2canvas: { scale: 1 },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                        }).from(container2).outputPdf('blob').then(function(blob) {
+                            descargarBlob(blob, nombreArchivo);
+                            mostrarExito('📄', 'PDF A4 horizontal con los 12 meses, leyenda y festivos.');
+                        });
+                        return;
+                    }
+                    var pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                    var pW = pdf.internal.pageSize.getWidth();   // 297
+                    var pH = pdf.internal.pageSize.getHeight();  // 210
+                    var margin = 6;
+                    var aW = pW - 2 * margin;
+                    var aH = pH - 2 * margin;
+                    var ratio = canvas.height / canvas.width;
+                    var iW = aW, iH = aW * ratio;
+                    if (iH > aH) { iH = aH; iW = aH / ratio; }
+                    var x = margin + (aW - iW) / 2;
+                    var imgData = canvas.toDataURL('image/jpeg', 0.96);
+                    pdf.addImage(imgData, 'JPEG', x, margin, iW, iH);
+                    var pdfBlob = pdf.output('blob');
+                    descargarBlob(pdfBlob, nombreArchivo);
+                    mostrarExito('📄', 'PDF A4 horizontal con los 12 meses, leyenda y festivos. Una sola página.');
+                }
+            }).catch(function(err) {
+                if (document.body.contains(contenedor)) document.body.removeChild(contenedor);
+                alert('Error al generar: ' + (err && err.message ? err.message : err));
+            });
         }
     }
 
@@ -1034,28 +1077,47 @@
     }
 
     window.abrirArchivoDescargado = function() {
-        if (_lastBlobUrl) {
-            window.open(_lastBlobUrl, '_blank');
-        } else {
+        if (!_lastBlobUrl) {
             alert('El archivo ya no está disponible en memoria. Búscalo en tu carpeta de Descargas.');
+            return;
         }
+        // Abrir en nueva pestaña sin atributo download (PDFs e imágenes se visualizan en el browser)
+        var a = document.createElement('a');
+        a.href = _lastBlobUrl;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     window.irACarpetaDescarga = function() {
-        // Intenta abrir la carpeta de Descargas según el SO
-        let ua = navigator.userAgent;
-        if (ua.includes('Windows')) {
-            // En Windows, el navegador no puede abrir carpetas del sistema por seguridad
-            // Mostramos un toast con instrucción
-            let m = document.createElement('div');
-            m.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:12px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 10px 25px rgba(0,0,0,0.3);max-width:320px;text-align:center;';
-            m.innerHTML = '📁 Abre el <b>Explorador de archivos</b> y ve a<br><b>Este equipo → Descargas</b>';
-            document.body.appendChild(m);
-            setTimeout(() => document.body.removeChild(m), 4000);
-        } else {
-            window.open('', '_blank'); // en Android abre el gestor de archivos en algunos casos
-        }
+        // El navegador no puede abrir carpetas del SO por seguridad.
+        // Mostramos un modal elegante con instrucciones claras.
         cerrarModalesExport();
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);';
+        var ua = navigator.userAgent;
+        var esAndroid = /Android/i.test(ua);
+        var instruccion = esAndroid
+            ? 'Abre la app <b>Archivos</b> o <b>Mis Archivos</b> de tu móvil y ve a la carpeta <b>Descargas</b>.'
+            : 'Abre el <b>Explorador de archivos</b> (Win+E) y ve a <b>Este equipo → Descargas</b>.';
+        var card = document.createElement('div');
+        card.style.cssText = 'background:#fff;border-radius:20px;padding:28px;max-width:380px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.25);text-align:center;';
+        card.innerHTML =
+            '<div style="width:64px;height:64px;background:#fffbeb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px;">&#x1F4C2;</div>' +
+            '<p style="font-size:1.05rem;font-weight:800;color:#0f172a;margin:0 0 8px;">Tu archivo está en Descargas</p>' +
+            '<p style="font-size:0.85rem;color:#64748b;margin:0 0 14px;line-height:1.5;">' + instruccion + '</p>' +
+            '<div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:18px;text-align:left;">' +
+            '<span style="font-size:22px;">&#x1F4C4;</span>' +
+            '<div><div style="font-size:0.85rem;font-weight:700;color:#1e293b;">' + (_exportNombreArchivo || 'Calendario Vacaciones') + '</div>' +
+            '<div style="font-size:0.72rem;color:#64748b;">&#x1F4C1; Carpeta Descargas</div></div>' +
+            '</div>' +
+            '<button id="btn-cerrar-overlay-carpeta" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:12px;padding:12px;font-size:0.95rem;font-weight:700;cursor:pointer;width:100%;">Entendido</button>';
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+        card.querySelector('#btn-cerrar-overlay-carpeta').addEventListener('click', function() { overlay.remove(); });
     };
 
     // ─────────────────────────────────────────────────────────────────
