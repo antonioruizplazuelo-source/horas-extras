@@ -958,34 +958,138 @@
         document.getElementById('modal-export-save').style.display = 'none';
 
         if (extensionExportActual === 'xlsx') {
-            let wb = XLSX.utils.book_new();
-            let año = fechaActual.getFullYear();
-            let wsConfigData = [
-                ['CONFIGURACIÓN DEL CALENDARIO ANUAL'],
-                ['Año Evaluado', año],
-                ['Grupo Salarial Activo', db.config.miGrupoSalarial],
-                ['Vacaciones Asignadas Totales', db.config.vacTotales],
-                ['Excesos Permitidos', db.config.excTotales],
-                [],
-                ['TÉCNICOS DE ALTA'],
-                ...db.tecnicos.map(t => [t])
-            ];
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsConfigData), 'Configuración');
-            let wsDiasData = [['Fecha', 'Tipo']];
-            Object.keys(db.diasEspeciales).sort().forEach(k => wsDiasData.push([k, db.diasEspeciales[k]]));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsDiasData), 'Días Especiales');
-            let wsTurnosData = [['Fecha', 'Operario', 'Turno']];
-            Object.keys(db.turnosTecnicos).sort().forEach(fecha => {
-                Object.keys(db.turnosTecnicos[fecha]).forEach(tec => {
-                    wsTurnosData.push([fecha, tec, db.turnosTecnicos[fecha][tec]]);
-                });
-            });
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsTurnosData), 'Cuadrante de Turnos');
             try {
+                var wb = XLSX.utils.book_new();
+                var año = fechaActual.getFullYear();
+                var nombresMesesXls = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                var diasSem = ['','L','M','X','J','V','S','D'];
+                var codEstado = { vaca:'VACACIONES', exc:'EXCESO', med:'BAJA', perm:'PERMISO', fest:'FESTIVO' };
+
+                // ── HOJA 1: CALENDARIO VISUAL ──
+                // Layout: 4 meses por fila, 3 filas. Cada mes ocupa 9 col (sem+7días+sep) y 9 filas.
+                // Offset col por mes en la fila: mes%4 * 9
+                // Offset fila por grupo: Math.floor(mes/4) * 10
+                var ws1 = {};
+                var maxC = 35, maxR = 29; // 4*9-1=35 cols, 3*10-1=29 rows
+
+                function xlCol(c) { return c < 26 ? String.fromCharCode(65+c) : String.fromCharCode(64+Math.floor(c/26)) + String.fromCharCode(65+(c%26)); }
+                function xlCell(r, c) { return xlCol(c) + (r+1); }
+                function setCell(r, c, v) { var addr = xlCell(r, c); ws1[addr] = { v: v, t: typeof v === 'number' ? 'n' : 's' }; }
+
+                var merges1 = [];
+
+                for (var mes = 0; mes < 12; mes++) {
+                    var colBase = (mes % 4) * 9;
+                    var rowBase = Math.floor(mes / 4) * 10;
+
+                    // Cabecera mes (col 0-7 del mes, row 0)
+                    setCell(rowBase, colBase, nombresMesesXls[mes].toUpperCase() + ' ' + año);
+                    merges1.push({ s: {r:rowBase, c:colBase}, e: {r:rowBase, c:colBase+7} });
+
+                    // Cabeceras días (row 1)
+                    diasSem.forEach(function(d, i) { setCell(rowBase+1, colBase+i, d || 'Sem'); });
+
+                    // Días del mes
+                    var primerDia = new Date(Date.UTC(año, mes, 1));
+                    var inicio = primerDia.getUTCDay() || 7;
+                    var cursor = new Date(Date.UTC(año, mes, 1));
+                    cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+
+                    for (var f = 0; f < 6; f++) {
+                        if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
+                        setCell(rowBase+2+f, colBase, getNumeroSemana(cursor)); // nº semana
+                        for (var d = 0; d < 7; d++) {
+                            var fStr = cursor.toISOString().split('T')[0];
+                            var isOther = cursor.getUTCMonth() !== mes;
+                            if (isOther) { setCell(rowBase+2+f, colBase+1+d, ''); cursor.setUTCDate(cursor.getUTCDate()+1); continue; }
+
+                            var partes = [];
+                            partes.push(cursor.getUTCDate());
+
+                            var estado = db.diasEspeciales[fStr];
+                            if (estado) partes.push(codEstado[estado] || estado.toUpperCase());
+
+                            var festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
+                            if (festObj) partes.push(festObj.nombre ? festObj.nombre.substring(0,12) : 'FESTIVO');
+
+                            var turnos = db.turnosTecnicos[fStr];
+                            if (turnos) partes.push(Object.values(turnos).join('/'));
+
+                            setCell(rowBase+2+f, colBase+1+d, partes.join(' | '));
+                            cursor.setUTCDate(cursor.getUTCDate()+1);
+                        }
+                    }
+                }
+                ws1['!ref'] = 'A1:' + xlCol(maxC) + '30';
+                ws1['!merges'] = merges1;
+                // Anchos de columna: col separadora ancha, resto igual
+                var colWidths = [];
+                for (var ci = 0; ci < 36; ci++) {
+                    var posEnMes = ci % 9;
+                    colWidths.push({ wch: posEnMes === 0 ? 4 : posEnMes === 8 ? 1 : 16 });
+                }
+                ws1['!cols'] = colWidths;
+                // Altos de fila
+                var rowHeights = [];
+                for (var ri = 0; ri < 30; ri++) {
+                    var posEnGrupo = ri % 10;
+                    rowHeights.push({ hpt: posEnGrupo === 0 ? 18 : posEnGrupo === 9 ? 6 : 36 });
+                }
+                ws1['!rows'] = rowHeights;
+                XLSX.utils.book_append_sheet(wb, ws1, 'Calendario ' + año);
+
+                // ── HOJA 2: FESTIVOS ──
+                var festData = [['Fecha', 'Día', 'Festivo', 'Tipo']];
+                var mNomXls = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                var tipoLblXls = {'fest-nac':'Nacional','fest-prov':'Autonómico','fest-loc':'Local'};
+                var vistosXls = new Set();
+                Object.keys(db.festivos).sort().forEach(function(key) {
+                    var obj = db.festivos[key];
+                    var fecha = key.startsWith('-') ? (año + key) : key;
+                    if (!fecha.startsWith(año.toString()) || vistosXls.has(fecha)) return;
+                    vistosXls.add(fecha);
+                    var p = fecha.split('-');
+                    festData.push([fecha, parseInt(p[2]) + ' ' + mNomXls[parseInt(p[1])-1], obj.nombre || key, tipoLblXls[obj.tipo] || obj.tipo]);
+                });
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(festData), 'Festivos');
+
+                // ── HOJA 3: VACACIONES Y EXCESOS ──
+                var cVacXls = 0, cExcXls = 0;
+                var diasData = [['Fecha', 'Estado', 'Turno']];
+                Object.keys(db.diasEspeciales).sort().forEach(function(k) {
+                    if (!k.startsWith(año.toString())) return;
+                    if (db.diasEspeciales[k] === 'vaca') cVacXls++;
+                    if (db.diasEspeciales[k] === 'exc') cExcXls++;
+                    var turnos2 = db.turnosTecnicos[k];
+                    diasData.push([k, codEstado[db.diasEspeciales[k]] || db.diasEspeciales[k], turnos2 ? Object.values(turnos2).join('/') : '']);
+                });
+                diasData.splice(1, 0,
+                    ['VACACIONES USADAS', cVacXls, 'de ' + db.config.vacTotales + ' (restan ' + Math.max(0,db.config.vacTotales-cVacXls) + ')'],
+                    ['EXCESOS USADOS', cExcXls, 'de ' + db.config.excTotales + ' (restan ' + Math.max(0,db.config.excTotales-cExcXls) + ')'],
+                    []
+                );
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(diasData), 'Resumen');
+
+                // ── HOJA 4: LEYENDA ──
+                var leyData = [
+                    ['Código','Significado','Color indicador'],
+                    ['VACACIONES','Día de vacaciones asignado','Borde verde superior (#10b981)'],
+                    ['EXCESO','Exceso de horas','Borde naranja superior (#f59e0b)'],
+                    ['BAJA','Baja médica','Borde rojo superior (#ef4444)'],
+                    ['PERMISO','Permiso retribuido','Borde morado superior (#a855f7)'],
+                    ['FESTIVO','Festivo editable','Borde naranja oscuro superior (#f97316)'],
+                    [],
+                    ['Festivos marcados con fondo:','',''],
+                    ['Nacional','Fondo rojo claro (#fee2e2)',''],
+                    ['Autonómico','Fondo verde claro (#dcfce7)',''],
+                    ['Local','Fondo azul claro (#dbeafe)',''],
+                ];
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(leyData), 'Leyenda');
+
                 var xlsxData = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
                 var xlsxBlob = new Blob([xlsxData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 descargarBlob(xlsxBlob, nombreArchivo);
-                mostrarExito('📊', 'Hoja de cálculo con Configuración, Días Especiales y Cuadrante de Turnos.');
+                mostrarExito('📊', 'Excel con calendario completo, festivos, resumen de vacaciones y leyenda.');
             } catch(xlsxErr) {
                 alert('Error al generar Excel: ' + xlsxErr.message);
             }
@@ -1008,7 +1112,7 @@
 
             // Usar html2canvas + jsPDF directamente (bundle html2pdf los expone como globals)
             window.html2canvas(contenedor, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
@@ -1056,8 +1160,8 @@
                     var iW = aW, iH = aW * ratio;
                     if (iH > aH) { iH = aH; iW = aH / ratio; }
                     var x = margin + (aW - iW) / 2;
-                    var imgData = canvas.toDataURL('image/jpeg', 0.96);
-                    pdf.addImage(imgData, 'JPEG', x, margin, iW, iH);
+                    var imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', x, margin, iW, iH);
                     var pdfBlob = pdf.output('blob');
                     descargarBlob(pdfBlob, nombreArchivo);
                     mostrarExito('📄', 'PDF A4 horizontal con los 12 meses, leyenda y festivos. Una sola página.');
@@ -1180,7 +1284,7 @@
             let item = document.createElement('div');
             item.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:8px;font-weight:600;color:#374151;';
             let sq = document.createElement('div');
-            if (it.brd) sq.style.cssText = 'width:12px;height:12px;border-radius:2px;border-top:4px solid ' + it.col + ';border:1px solid #e2e8f0;border-top-width:4px;background:#f8fafc;flex-shrink:0;';
+            if (it.brd) sq.style.cssText = 'width:12px;height:12px;border-radius:2px;border:1px solid #e2e8f0;border-top:4px solid ' + it.col + ';background:#f8fafc;flex-shrink:0;';
             else sq.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + it.col + ';flex-shrink:0;';
             item.appendChild(sq);
             item.appendChild(document.createTextNode(it.label));
@@ -1257,25 +1361,25 @@
 
                 let cell = document.createElement('div');
                 cell.style.cssText =
-                    'min-height:18px;height:20px;padding:1px;background:' + bg +
+                    'min-height:22px;height:26px;padding:1px;background:' + bg +
                     ';border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;' +
                     'border-top:3px solid ' + (isOther ? 'transparent' : brdTop) +
                     ';display:flex;flex-direction:column;align-items:center;justify-content:flex-start;' +
                     'overflow:hidden;opacity:' + (isOther ? '0.25' : '1') + ';';
 
                 let num = document.createElement('div');
-                num.style.cssText = 'font-size:8px;font-weight:700;color:' + (isOther ? '#cbd5e1' : '#1e293b') + ';line-height:1;';
+                num.style.cssText = 'font-size:9px;font-weight:700;color:' + (isOther ? '#cbd5e1' : '#1e293b') + ';line-height:1;';
                 num.textContent = cursor.getUTCDate();
                 cell.appendChild(num);
 
                 if (turnoTxt) {
                     let t = document.createElement('div');
-                    t.style.cssText = 'font-size:5.5px;font-weight:800;color:#0369a1;line-height:1;';
+                    t.style.cssText = 'font-size:7px;font-weight:800;color:#0369a1;line-height:1;white-space:nowrap;';
                     t.textContent = turnoTxt;
                     cell.appendChild(t);
                 } else if (festNom) {
                     let fn = document.createElement('div');
-                    fn.style.cssText = 'font-size:5px;color:#374151;line-height:1;overflow:hidden;white-space:nowrap;max-width:100%;';
+                    fn.style.cssText = 'font-size:6.5px;color:#374151;line-height:1;overflow:hidden;white-space:nowrap;max-width:100%;';
                     fn.textContent = festNom;
                     cell.appendChild(fn);
                 }
@@ -1412,10 +1516,12 @@
         });
         festivosHtml += '</table>';
 
-        return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:12mm;}body{font-family:Calibri,Arial,sans-serif;margin:0;}table{page-break-inside:avoid;}</style></head><body>' +
+        return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8">' +
+            '<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>75</w:Zoom></w:WordDocument></xml>' +
+            '<style>@page Section1{size:29.7cm 21.0cm;mso-page-orientation:landscape;margin:12mm;}body{font-family:Calibri,Arial,sans-serif;margin:0;mso-page-orientation:landscape;}div.Section1{page:Section1;}table{page-break-inside:avoid;border-collapse:collapse;}</style></head><body><div class="Section1">' +
             '<h1 style="color:#1e3a8a;font-size:16pt;margin:0 0 2pt;">CALENDARIO LABORAL ' + año + (tecnPrincipal ? ' · ' + tecnPrincipal : '') + '</h1>' +
             '<p style="color:#64748b;font-size:9pt;margin:0 0 4pt;">Convenio Metal A Coruña · Generado el ' + hoy + ' · Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (rest: ' + Math.max(0, db.config.vacTotales - cVac) + ') · Excesos: ' + cExc + '/' + db.config.excTotales + ' (rest: ' + Math.max(0, db.config.excTotales - cExc) + ')</p>' +
-            mesesHtml + festivosHtml + '</body></html>';
+            mesesHtml + festivosHtml + '</div></body></html>';
     }
 
 
