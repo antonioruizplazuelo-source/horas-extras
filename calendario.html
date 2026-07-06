@@ -37,6 +37,7 @@
             --fest-loc-text: #115e59;
         }
 
+
         * { 
             box-sizing: border-box; 
             margin: 0; 
@@ -638,7 +639,29 @@
     let extensionExportActual = 'pdf';
     let diaSeleccionadoClave = null;
 
+    // ── Opción B: bridge postMessage con la app principal ──────────────────
+    window.addEventListener('message', function(e) {
+        if (!e.data || e.data.type !== 'HE_SYNC') return;
+        if (e.data.action === 'reload-db') {
+            try {
+                const fresh = JSON.parse(localStorage.getItem('metal_v8_db'));
+                if (fresh) { db = fresh; save(); render(); }
+            } catch(err) {}
+        }
+        if (e.data.action === 'set-theme') {
+            var _ds = document.getElementById('__he-dark-style');
+            if (e.data.theme === 'dark') {
+                if (!_ds) { _ds = document.createElement('style'); _ds.id = '__he-dark-style'; document.head.appendChild(_ds); }
+                _ds.textContent = ':root{--bg-main:#0e1018;--bg-card:#181b24;--border:#2d3748;--text-main:#f1f5f9;--text-muted:#94a3b8;--primary:#60a5fa;--primary-hover:#3b82f6;--vacaciones:#34d399;--exceso:#fbbf24;--baja:#f87171;--permiso:#c084fc;--festivo-color:#fb923c;--fest-nac:#450a0a;--fest-nac-text:#fca5a5;--fest-prov:#1e3a5f;--fest-prov-text:#93c5fd;--fest-loc:#042f2e;--fest-loc-text:#5eead4;}';
+            } else {
+                if (_ds) _ds.remove();
+            }
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
+        // Avisar al padre que el calendario está listo para recibir mensajes
+        try { window.parent.postMessage({ type: 'HE_SYNC', action: 'cal-ready' }, '*'); } catch(e) {}
         initContadores();
         initModoSeleccion();
         initClickerSecuencias();
