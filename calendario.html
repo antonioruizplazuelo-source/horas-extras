@@ -969,7 +969,6 @@
             }
 
         } else if (extensionExportActual === 'doc') {
-        } else if (extensionExportActual === 'doc') {
             try {
                 var docHtml = generarDocumentoWord(fechaActual.getFullYear());
                 var wordBlob = new Blob([docHtml], { type: 'application/msword' });
@@ -1257,7 +1256,7 @@
 
                 if (turnoTxt) {
                     let t = document.createElement('div');
-                    t.style.cssText = 'font-size:7px;font-weight:800;color:#0369a1;line-height:1;white-space:nowrap;';
+                    t.style.cssText = 'font-size:8px;font-weight:900;color:#1d4ed8;line-height:1;white-space:nowrap;background:#eff6ff;border-radius:2px;padding:0 1px;';
                     t.textContent = turnoTxt;
                     cell.appendChild(t);
                 } else if (festNom) {
@@ -1328,168 +1327,191 @@
     // generarDocumentoExcel — HTML descargable como .xls (con colores y turnos)
     // ─────────────────────────────────────────────────────────────────
     function generarDocumentoExcel(año) {
-        let NM  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-        let nm  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-        let hoy = new Date().toLocaleDateString('es-ES');
-        let tecn = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
+        const NM  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const nm  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        const hoy = new Date().toLocaleDateString('es-ES');
+        const tecn = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
         let cVac = 0, cExc = 0;
         Object.keys(db.diasEspeciales).forEach(function(k) {
-            if (k.startsWith(año+'')) {
-                if (db.diasEspeciales[k]==='vaca') cVac++;
-                if (db.diasEspeciales[k]==='exc')  cExc++;
-            }
+            if (k.startsWith(año+'')) { if(db.diasEspeciales[k]==='vaca') cVac++; if(db.diasEspeciales[k]==='exc') cExc++; }
         });
 
-        let bgFest  = {'fest-nac':'#fee2e2','fest-prov':'#dcfce7','fest-loc':'#dbeafe'};
-        let colEst  = {vaca:'#10b981',exc:'#f59e0b',med:'#ef4444',perm:'#a855f7',fest:'#f97316'};
-        let lblEst  = {vaca:'VAC',exc:'EXC',med:'BAJA',perm:'PERM',fest:'FEST'};
+        const bgFest = {'fest-nac':'#fee2e2','fest-prov':'#dcfce7','fest-loc':'#dbeafe'};
+        const colEst = {vaca:'#10b981',exc:'#f59e0b',med:'#ef4444',perm:'#a855f7',fest:'#f97316'};
+        const lblEst = {vaca:'VAC',exc:'EXC',med:'BAJA',perm:'PERM',fest:'FEST'};
+        const bgEst  = {vaca:'#f0fdf4',exc:'#fffbeb',med:'#fff5f5',perm:'#faf5ff',fest:'#fff7ed'};
 
-        // Genera el HTML de un mini-mes
-        function miniMes(mes) {
-            let primerDia = new Date(Date.UTC(año, mes, 1));
-            let inicio = primerDia.getUTCDay() || 7;
+        // W_SEM=28, W_DAY=33, W_GAP=5, W_MON=259
+        // 4 meses × 259px + 3 spacers × 5px = 1051px total
+
+        // Precalcular semanas de un mes: array de 6 arrays de 7 días
+        function semanasMes(mes) {
+            const primerDia = new Date(Date.UTC(año, mes, 1));
+            const inicio = primerDia.getUTCDay() || 7;
             let cursor = new Date(Date.UTC(año, mes, 1));
             cursor.setUTCDate(cursor.getUTCDate() - (inicio-1));
-
-            // columna Sem=28px, 7 días distribuidos igual en el resto
-            let colSem = 28;
-            let h = '<table width="100%" style="table-layout:fixed;border-collapse:collapse;">' +
-                // cabecera mes
-                '<tr><td colspan="8" style="background:#1e3a8a;color:#ffffff;text-align:center;' +
-                    'font-family:Calibri,Arial;font-size:9pt;font-weight:bold;padding:3px 0;' +
-                    'border:1px solid #1e3a8a;">' + NM[mes].toUpperCase() + ' ' + año + '</td></tr>' +
-                // cabecera días
-                '<tr>';
-            ['Sem','L','M','X','J','V','S','D'].forEach(function(d,i) {
-                h += '<td width="' + (i===0?colSem:36) + '" style="text-align:center;font-family:Calibri;' +
-                     'font-size:7pt;font-weight:bold;color:#475569;background:#f1f5f9;' +
-                     'padding:2px;border:1px solid #cbd5e1;">' + d + '</td>';
-            });
-            h += '</tr>';
-
+            const rows = [];
             for (let f = 0; f < 6; f++) {
                 if (f>0 && cursor.getUTCFullYear()===año && cursor.getUTCMonth()>mes) break;
-                h += '<tr>';
-                // nº semana
-                h += '<td style="text-align:center;font-family:Calibri;font-size:6pt;color:#94a3b8;' +
-                     'background:#f8fafc;padding:1px;border:1px solid #e2e8f0;">' + getNumeroSemana(cursor) + '</td>';
+                const semNum = getNumeroSemana(cursor);
+                const days = [];
                 for (let d = 0; d < 7; d++) {
-                    let fStr = cursor.toISOString().split('T')[0];
-                    let isOther = cursor.getUTCMonth() !== mes;
-
-                    let bg = '#ffffff';
-                    let btStyle = '';
-                    let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
-                    if (festObj && !isOther) bg = bgFest[festObj.tipo] || bg;
-
-                    let estado = db.diasEspeciales[fStr];
-                    if (estado && !isOther) {
-                        btStyle = 'border-top:3px solid ' + (colEst[estado]||'#999') + ';';
-                    }
-
-                    let turnos = db.turnosTecnicos[fStr];
-                    let numTxt = isOther
-                        ? '<span style="color:#d1d5db;font-size:7pt;">' + cursor.getUTCDate() + '</span>'
-                        : '<span style="font-size:8pt;font-weight:bold;color:#1e293b;">' + cursor.getUTCDate() + '</span>';
-                    let estTxt = (estado && !isOther)
-                        ? '<br><span style="font-size:6pt;font-weight:bold;color:' + (colEst[estado]||'#555') + ';">'
-                          + (lblEst[estado]||estado.toUpperCase()) + '</span>'
-                        : '';
-                    let trnTxt = (turnos && !isOther)
-                        ? '<br><span style="font-size:7pt;font-weight:bold;color:#1d4ed8;">'
-                          + Object.values(turnos).join(',') + '</span>'
-                        : '';
-
-                    let cellStyle = 'text-align:center;font-family:Calibri;padding:2px 1px;' +
-                        'border:1px solid #e2e8f0;background:' + bg + ';' + btStyle;
-
-                    h += '<td style="' + cellStyle + '">' + numTxt + estTxt + trnTxt + '</td>';
+                    const fStr = cursor.toISOString().split('T')[0];
+                    const isOther = cursor.getUTCMonth() !== mes;
+                    const festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
+                    const estado  = db.diasEspeciales[fStr];
+                    const turnos  = db.turnosTecnicos[fStr];
+                    days.push({
+                        dia:    cursor.getUTCDate(),
+                        isOther: isOther,
+                        bg:     (!isOther && festObj) ? (bgFest[festObj.tipo]||'#fff') : (!isOther && estado ? (bgEst[estado]||'#fff') : '#fff'),
+                        btCol:  (!isOther && estado) ? (colEst[estado]||'') : '',
+                        estLbl: (!isOther && estado) ? (lblEst[estado]||'') : '',
+                        estCol: (!isOther && estado) ? (colEst[estado]||'') : '',
+                        turno:  (!isOther && turnos) ? Object.values(turnos).join(',') : ''
+                    });
                     cursor.setUTCDate(cursor.getUTCDate()+1);
                 }
-                h += '</tr>';
+                rows.push({semNum, days});
             }
-            h += '</table>';
-            return h;
+            return rows;
         }
 
-        // 3 filas de 4 meses — cada fila es una tabla independiente con anchos fijos
-        // (tabla única con border-spacing causa desalineado en Excel)
+        // Genera el bloque de columnas <col> para una fila de 4 meses
+        function colGroup() {
+            let s = '';
+            for (let m = 0; m < 4; m++) {
+                s += '<col width="28">';
+                for (let d = 0; d < 7; d++) s += '<col width="33">';
+                if (m < 3) s += '<col width="5">';
+            }
+            return s;
+        }
+
+        // Celda de día
+        function tdDia(day) {
+            if (day.isOther) return '<td style="background:#f8fafc;border:1px solid #f1f5f9;"></td>';
+            const bt = day.btCol ? ('border-top:3px solid '+day.btCol+';') : 'border-top:1px solid #e2e8f0;';
+            const numSty = 'font-size:9pt;font-weight:700;color:#1e293b;display:block;line-height:1.2;';
+            const estHtml = day.estLbl ? '<span style="display:block;font-size:6pt;font-weight:700;color:'+day.estCol+';line-height:1;">'+day.estLbl+'</span>' : '';
+            const trnHtml = day.turno ? '<span style="display:block;font-size:7pt;font-weight:900;color:#1d4ed8;background:#eff6ff;line-height:1.3;border-radius:2px;">'+day.turno+'</span>' : '';
+            return '<td style="text-align:center;vertical-align:top;padding:1px;background:'+day.bg+';'+bt+'border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">'
+                + '<span style="'+numSty+'">'+day.dia+'</span>'
+                + estHtml + trnHtml
+                + '</td>';
+        }
+
         let mesesHtml = '';
+        // 3 filas de 4 meses
         for (let fila = 0; fila < 3; fila++) {
-            mesesHtml += '<table width="100%" style="table-layout:fixed;border-collapse:collapse;margin-bottom:4px;"><tr>';
-            for (let col = 0; col < 4; col++) {
-                let mes = fila*4 + col;
-                let pad = col < 3 ? 'padding-right:4px;' : '';
-                mesesHtml += '<td width="25%" style="vertical-align:top;' + pad + '">' + miniMes(mes) + '</td>';
+            const mesesFila = [fila*4, fila*4+1, fila*4+2, fila*4+3];
+            const semanas   = mesesFila.map(m => semanasMes(m));
+            const maxRows   = Math.max(...semanas.map(s => s.length));
+            const totalW    = 4*259 + 3*5;
+
+            mesesHtml += '<table width="'+totalW+'" style="table-layout:fixed;border-collapse:collapse;margin-bottom:5px;">';
+            mesesHtml += colGroup();
+
+            // Cabeceras de mes
+            mesesHtml += '<tr>';
+            for (let ci = 0; ci < 4; ci++) {
+                const mes = mesesFila[ci];
+                mesesHtml += '<td colspan="8" style="background:#1e3a8a;color:#ffffff;text-align:center;font-family:Calibri,Arial;font-size:9pt;font-weight:bold;padding:3px 0;border:1px solid #1e3a8a;">'+NM[mes].toUpperCase()+' '+año+'</td>';
+                if (ci < 3) mesesHtml += '<td style="background:#e2e8f0;"></td>';
             }
-            mesesHtml += '</tr></table>';
+            mesesHtml += '</tr>';
+
+            // Cabeceras días
+            mesesHtml += '<tr>';
+            for (let ci = 0; ci < 4; ci++) {
+                const hdrSty = 'text-align:center;font-family:Calibri;font-size:7pt;font-weight:bold;color:#475569;background:#f1f5f9;padding:2px 0;border:1px solid #cbd5e1;';
+                mesesHtml += '<td style="'+hdrSty+'">Sem</td>';
+                ['L','M','X','J','V','S','D'].forEach(function(d){ mesesHtml += '<td style="'+hdrSty+'">'+d+'</td>'; });
+                if (ci < 3) mesesHtml += '<td style="background:#e2e8f0;"></td>';
+            }
+            mesesHtml += '</tr>';
+
+            // Filas de semanas
+            for (let r = 0; r < maxRows; r++) {
+                mesesHtml += '<tr>';
+                for (let ci = 0; ci < 4; ci++) {
+                    const row = semanas[ci][r];
+                    if (!row) {
+                        // Mes con menos semanas → celdas vacías
+                        mesesHtml += '<td style="background:#f8fafc;border:1px solid #f1f5f9;"></td>';
+                        for (let d=0;d<7;d++) mesesHtml += '<td style="background:#f8fafc;border:1px solid #f1f5f9;"></td>';
+                    } else {
+                        const semSty = 'text-align:center;font-family:Calibri;font-size:6pt;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;padding:1px;';
+                        mesesHtml += '<td style="'+semSty+'">'+row.semNum+'</td>';
+                        row.days.forEach(function(day){ mesesHtml += tdDia(day); });
+                    }
+                    if (ci < 3) mesesHtml += '<td style="background:#e2e8f0;"></td>';
+                }
+                mesesHtml += '</tr>';
+            }
+
+            mesesHtml += '</table>';
         }
 
-        // Leyenda compacta
-        let items = [
-            {col:'#10b981',lbl:'Vacaciones'},
-            {col:'#f59e0b',lbl:'Exceso horas'},
-            {col:'#ef4444',lbl:'Baja m\u00E9dica'},
-            {col:'#a855f7',lbl:'Permiso'},
-            {col:'#fee2e2',lbl:'Fest. Nacional'},
-            {col:'#dcfce7',lbl:'Fest. Auton.'},
-            {col:'#dbeafe',lbl:'Fest. Local'}
+        // Leyenda
+        const legItems = [
+            {col:'#10b981',lbl:'Vacaciones'},{col:'#f59e0b',lbl:'Exceso horas'},
+            {col:'#ef4444',lbl:'Baja m\u00e9dica'},{col:'#a855f7',lbl:'Permiso'},
+            {col:'#fee2e2',lbl:'Festivo Nac.'},{col:'#dcfce7',lbl:'Festivo Auton.'},
+            {col:'#dbeafe',lbl:'Festivo Local'},
+            {col:'#eff6ff',lbl:'Turno (M/T/TG/MG)'}
         ];
-        let leyHtml = '<table width="100%" style="border-collapse:collapse;margin-bottom:4px;"><tr>';
-        items.forEach(function(it) {
-            leyHtml += '<td style="padding:2px 5px;border:1px solid #e2e8f0;font-family:Calibri;font-size:7pt;white-space:nowrap;">' +
-                '<span style="display:inline-block;width:9px;height:9px;background:' + it.col + ';border:1px solid #94a3b8;margin-right:3px;vertical-align:middle;"></span>' +
-                it.lbl + '</td>';
+        let leyHtml = '<table width="1051" style="border-collapse:collapse;margin-bottom:4px;"><tr>';
+        legItems.forEach(function(it){
+            leyHtml += '<td style="padding:2px 4px;border:1px solid #e2e8f0;font-family:Calibri;font-size:7pt;white-space:nowrap;">'
+                + '<span style="display:inline-block;width:8px;height:8px;background:'+it.col+';border:1px solid #94a3b8;margin-right:2px;vertical-align:middle;"></span>'
+                + it.lbl + '</td>';
         });
         leyHtml += '</tr></table>';
 
         // Festivos
-        let festHtml = '<p style="font-family:Calibri;font-size:9pt;font-weight:bold;color:#1e3a8a;margin:4px 0 2px;">Festivos ' + año + ' · A Coru\u00F1a (Convenio Metal)</p>' +
-            '<table width="100%" style="border-collapse:collapse;font-family:Calibri;font-size:8pt;">' +
-            '<tr><td style="background:#1e3a8a;color:#fff;padding:2px 6px;font-weight:bold;">Fecha</td>' +
-            '<td style="background:#1e3a8a;color:#fff;padding:2px 6px;font-weight:bold;">Festivo</td>' +
-            '<td style="background:#1e3a8a;color:#fff;padding:2px 6px;font-weight:bold;">Tipo</td></tr>';
-        let vistos = new Set();
-        Object.keys(db.festivos).sort().forEach(function(key) {
-            let obj = db.festivos[key];
-            let fecha = key.startsWith('-') ? (año+key) : key;
-            if (!fecha.startsWith(año+'') || vistos.has(fecha)) return;
-            vistos.add(fecha);
-            let p = fecha.split('-'); let dia = parseInt(p[2]); let m2 = parseInt(p[1])-1;
-            let colF = {'fest-nac':'#dc2626','fest-prov':'#16a34a','fest-loc':'#2563eb'};
-            let lblF = {'fest-nac':'Nacional','fest-prov':'Auton\u00F3mico','fest-loc':'Local'};
-            festHtml += '<tr>' +
-                '<td style="padding:1px 6px;border:1px solid #e2e8f0;">' + dia + ' ' + nm[m2] + '</td>' +
-                '<td style="padding:1px 6px;border:1px solid #e2e8f0;">' + (obj.nombre||key) + '</td>' +
-                '<td style="padding:1px 6px;border:1px solid #e2e8f0;color:' + (colF[obj.tipo]||'#374151') + ';font-weight:bold;">' + (lblF[obj.tipo]||obj.tipo) + '</td></tr>';
+        let festHtml = '<p style="font-family:Calibri;font-size:9pt;font-weight:bold;color:#1e3a8a;margin:4px 0 2px;">Festivos '+año+' · A Coru\u00f1a (Convenio Metal)</p>'
+            + '<table style="border-collapse:collapse;font-family:Calibri;font-size:8pt;">'
+            + '<tr><td style="background:#1e3a8a;color:#fff;padding:2px 8px;font-weight:bold;">Fecha</td>'
+            + '<td style="background:#1e3a8a;color:#fff;padding:2px 8px;font-weight:bold;">Festivo</td>'
+            + '<td style="background:#1e3a8a;color:#fff;padding:2px 8px;font-weight:bold;">Tipo</td></tr>';
+        const vis = new Set();
+        Object.keys(db.festivos).sort().forEach(function(key){
+            const obj = db.festivos[key];
+            const fecha = key.startsWith('-') ? (año+key) : key;
+            if (!fecha.startsWith(año+'') || vis.has(fecha)) return;
+            vis.add(fecha);
+            const p2 = fecha.split('-'); const dia = parseInt(p2[2]); const m2 = parseInt(p2[1])-1;
+            const colF = {'fest-nac':'#dc2626','fest-prov':'#16a34a','fest-loc':'#2563eb'};
+            const lblF = {'fest-nac':'Nacional','fest-prov':'Auton\u00f3mico','fest-loc':'Local'};
+            festHtml += '<tr>'
+                + '<td style="padding:1px 8px;border:1px solid #e2e8f0;">'+dia+' '+nm[m2]+'</td>'
+                + '<td style="padding:1px 8px;border:1px solid #e2e8f0;">'+(obj.nombre||key)+'</td>'
+                + '<td style="padding:1px 8px;border:1px solid #e2e8f0;color:'+(colF[obj.tipo]||'#374151')+';font-weight:bold;">'+(lblF[obj.tipo]||obj.tipo)+'</td></tr>';
         });
         festHtml += '</table>';
 
-        return '<!DOCTYPE html>' +
-            '<html xmlns:o="urn:schemas-microsoft-com:office:office"' +
-            ' xmlns:x="urn:schemas-microsoft-com:office:excel"' +
-            ' xmlns="http://www.w3.org/TR/REC-html40">' +
-            '<head><meta charset="utf-8">' +
-            '<xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>' +
-            '<x:Name>Calendario ' + año + '</x:Name>' +
-            '<x:WorksheetOptions><x:FitToPage/>' +
-            '<x:Print><x:ValidPrinterInfo/><x:Landscape/>' +
-            '<x:FitWidth>1</x:FitWidth><x:FitHeight>1</x:FitHeight>' +
-            '<x:PaperSizeIndex>9</x:PaperSizeIndex></x:Print>' +
-            '</x:WorksheetOptions>' +
-            '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml>' +
-            '<style>' +
-            '@page{size:A4 landscape;margin:8mm;}' +
-            'body{font-family:Calibri,Arial,sans-serif;font-size:8pt;margin:0;}' +
-            'td,th{mso-number-format:"@";}' +
-            '</style>' +
-            '</head><body>' +
-            '<table width="100%" style="margin-bottom:3px;border-collapse:collapse;"><tr>' +
-            '<td style="font-family:Calibri;font-size:14pt;font-weight:bold;color:#1e3a8a;padding:0;">CALENDARIO LABORAL ' + año + (tecn?' · '+tecn:'') + '</td>' +
-            '<td style="text-align:right;font-family:Calibri;font-size:8pt;color:#64748b;vertical-align:bottom;padding:0;">Convenio Metal A Coruña · ' + hoy + ' · Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (rest: ' + Math.max(0,db.config.vacTotales-cVac) + ') · Excesos: ' + cExc + '/' + db.config.excTotales + ' (rest: ' + Math.max(0,db.config.excTotales-cExc) + ')</td>' +
-            '</tr></table>' +
-            leyHtml + mesesHtml + festHtml +
-            '</body></html>';
+        return '<!DOCTYPE html>'
+            + '<html xmlns:o="urn:schemas-microsoft-com:office:office"'
+            + ' xmlns:x="urn:schemas-microsoft-com:office:excel"'
+            + ' xmlns="http://www.w3.org/TR/REC-html40">'
+            + '<head><meta charset="utf-8">'
+            + '<xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
+            + '<x:Name>Calendario '+año+'</x:Name>'
+            + '<x:WorksheetOptions><x:FitToPage/>'
+            + '<x:Print><x:ValidPrinterInfo/><x:Landscape/>'
+            + '<x:FitWidth>1</x:FitWidth><x:FitHeight>1</x:FitHeight>'
+            + '<x:PaperSizeIndex>9</x:PaperSizeIndex></x:Print>'
+            + '</x:WorksheetOptions>'
+            + '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml>'
+            + '<style>body{font-family:Calibri,Arial;font-size:8pt;margin:0;} td,th{mso-number-format:"@";}</style>'
+            + '</head><body>'
+            + '<table width="'+(4*259+3*5)+'" style="margin-bottom:4px;border-collapse:collapse;"><tr>'
+            + '<td style="font-family:Calibri;font-size:14pt;font-weight:bold;color:#1e3a8a;padding:0 0 2px;">CALENDARIO LABORAL '+año+(tecn?' · '+tecn:'')+'</td>'
+            + '<td style="text-align:right;font-family:Calibri;font-size:8pt;color:#64748b;vertical-align:bottom;padding:0 0 2px;">Convenio Metal A Coru\u00f1a · '+hoy+' · Vacaciones: '+cVac+'/'+db.config.vacTotales+' (rest: '+Math.max(0,db.config.vacTotales-cVac)+') · Excesos: '+cExc+'/'+db.config.excTotales+' (rest: '+Math.max(0,db.config.excTotales-cExc)+')</td>'
+            + '</tr></table>'
+            + leyHtml + mesesHtml + festHtml
+            + '</body></html>';
     }
 
         // generarDocumentoWord — HTML descargable como .doc
@@ -1539,7 +1561,7 @@
                         let estado = db.diasEspeciales[fStr];
                         if (estado && !isOther) bt = 'border-top:3pt solid ' + (brdEst[estado] || '#ccc') + ';';
                         let turnos = db.turnosTecnicos[fStr];
-                        let turnoTxt = (turnos && !isOther) ? '<br><b style="color:#0369a1;font-size:8pt;">' + Object.values(turnos).join(',') + '</b>' : '';
+                        let turnoTxt = (turnos && !isOther) ? '<br><span style="display:inline-block;background:#eff6ff;color:#1d4ed8;font-size:8pt;font-weight:900;padding:0 2pt;border-radius:2pt;line-height:1.2;">' + Object.values(turnos).join(',') + '</span>' : '';
                         mHtml += '<td style="text-align:center;font-size:7pt;padding:1pt;border:1px solid #e2e8f0;background:' + bg + ';' + bt + (isOther?'color:#cbd5e1;':'') + '">' + cursor.getUTCDate() + turnoTxt + '</td>';
                         cursor.setUTCDate(cursor.getUTCDate() + 1);
                     }
