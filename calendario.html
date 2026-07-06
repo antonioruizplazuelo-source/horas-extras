@@ -1328,103 +1328,171 @@
     // generarDocumentoExcel — HTML descargable como .xls (con colores y turnos)
     // ─────────────────────────────────────────────────────────────────
     function generarDocumentoExcel(año) {
-        let nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-        let mNom = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        let NM  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        let nm  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
         let hoy = new Date().toLocaleDateString('es-ES');
-        let tecnPrincipal = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
+        let tecn = (db.tecnicos && db.tecnicos.length > 0) ? db.tecnicos[0] : '';
         let cVac = 0, cExc = 0;
         Object.keys(db.diasEspeciales).forEach(function(k) {
-            if (k.startsWith(año.toString())) {
-                if (db.diasEspeciales[k] === 'vaca') cVac++;
-                if (db.diasEspeciales[k] === 'exc') cExc++;
+            if (k.startsWith(año+'')) {
+                if (db.diasEspeciales[k]==='vaca') cVac++;
+                if (db.diasEspeciales[k]==='exc')  cExc++;
             }
         });
 
-        let bgFest = { 'fest-nac': '#fee2e2', 'fest-prov': '#dcfce7', 'fest-loc': '#dbeafe' };
-        let brdEst = { vaca: '#10b981', exc: '#f59e0b', med: '#ef4444', perm: '#a855f7', fest: '#f97316' };
-        let lblEst = { vaca: 'VAC', exc: 'EXC', med: 'BAJA', perm: 'PERM', fest: 'FEST' };
+        let bgFest  = {'fest-nac':'#fee2e2','fest-prov':'#dcfce7','fest-loc':'#dbeafe'};
+        let colEst  = {vaca:'#10b981',exc:'#f59e0b',med:'#ef4444',perm:'#a855f7',fest:'#f97316'};
+        let lblEst  = {vaca:'VAC',exc:'EXC',med:'BAJA',perm:'PERM',fest:'FEST'};
 
-        let mesesHtml = '';
-        mesesHtml += '<table style="width:100%;border-collapse:separate;border-spacing:4px 4px;margin-bottom:8pt;">';
-        for (let fila = 0; fila < 3; fila++) {
-            mesesHtml += '<tr>';
-            for (let col = 0; col < 4; col++) {
-                let mes = fila * 4 + col;
-                let primerDia = new Date(Date.UTC(año, mes, 1));
-                let inicio = primerDia.getUTCDay() || 7;
-                let cursor = new Date(Date.UTC(año, mes, 1));
-                cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+        // Genera el HTML de un mini-mes
+        function miniMes(mes) {
+            let primerDia = new Date(Date.UTC(año, mes, 1));
+            let inicio = primerDia.getUTCDay() || 7;
+            let cursor = new Date(Date.UTC(año, mes, 1));
+            cursor.setUTCDate(cursor.getUTCDate() - (inicio-1));
 
-                let mHtml = '<td style="vertical-align:top;border:1px solid #cbd5e1;width:25%;">' +
-                    '<table style="width:100%;border-collapse:collapse;">' +
-                    '<tr><th colspan="8" style="background:#1e3a8a;color:#ffffff;text-align:center;font-size:8pt;padding:3pt 0;">' + nombresMeses[mes].toUpperCase() + '</th></tr>' +
-                    '<tr>' + ['','L','M','X','J','V','S','D'].map(function(d) { return '<th style="text-align:center;font-size:6pt;color:#64748b;background:#f8fafc;padding:1pt;border-bottom:1px solid #e2e8f0;">' + (d||'Sem') + '</th>'; }).join('') + '</tr>';
+            // columna Sem=28px, 7 días distribuidos igual en el resto
+            let colSem = 28;
+            let h = '<table width="100%" style="table-layout:fixed;border-collapse:collapse;">' +
+                // cabecera mes
+                '<tr><td colspan="8" style="background:#1e3a8a;color:#ffffff;text-align:center;' +
+                    'font-family:Calibri,Arial;font-size:9pt;font-weight:bold;padding:3px 0;' +
+                    'border:1px solid #1e3a8a;">' + NM[mes].toUpperCase() + ' ' + año + '</td></tr>' +
+                // cabecera días
+                '<tr>';
+            ['Sem','L','M','X','J','V','S','D'].forEach(function(d,i) {
+                h += '<td width="' + (i===0?colSem:36) + '" style="text-align:center;font-family:Calibri;' +
+                     'font-size:7pt;font-weight:bold;color:#475569;background:#f1f5f9;' +
+                     'padding:2px;border:1px solid #cbd5e1;">' + d + '</td>';
+            });
+            h += '</tr>';
 
-                for (let f = 0; f < 6; f++) {
-                    if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
-                    mHtml += '<tr><td style="text-align:center;font-size:5pt;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;padding:1pt;">' + getNumeroSemana(cursor) + '</td>';
-                    for (let d = 0; d < 7; d++) {
-                        let fStr = cursor.toISOString().split('T')[0];
-                        let isOther = cursor.getUTCMonth() !== mes;
-                        let bg = '#ffffff', borderTop = '';
-                        let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
-                        if (festObj && !isOther) bg = bgFest[festObj.tipo] || bg;
-                        let estado = db.diasEspeciales[fStr];
-                        if (estado && !isOther) borderTop = 'border-top:3pt solid ' + (brdEst[estado] || '#ccc') + ';';
-                        let turnos = db.turnosTecnicos[fStr];
-                        let estTxt = (estado && !isOther) ? '<div style="font-size:5pt;color:' + (brdEst[estado]||'#555') + ';font-weight:bold;line-height:1;">' + (lblEst[estado]||estado.toUpperCase()) + '</div>' : '';
-                        let turnoTxt = (turnos && !isOther) ? '<div style="font-size:6pt;color:#0369a1;font-weight:bold;line-height:1;">' + Object.values(turnos).join(',') + '</div>' : '';
-                        let cellStyle = 'text-align:center;font-size:7pt;padding:1pt;border:1px solid #e2e8f0;background:' + bg + ';' + borderTop + (isOther ? 'color:#cbd5e1;' : '');
-                        mHtml += '<td style="' + cellStyle + '">' + cursor.getUTCDate() + estTxt + turnoTxt + '</td>';
-                        cursor.setUTCDate(cursor.getUTCDate() + 1);
+            for (let f = 0; f < 6; f++) {
+                if (f>0 && cursor.getUTCFullYear()===año && cursor.getUTCMonth()>mes) break;
+                h += '<tr>';
+                // nº semana
+                h += '<td style="text-align:center;font-family:Calibri;font-size:6pt;color:#94a3b8;' +
+                     'background:#f8fafc;padding:1px;border:1px solid #e2e8f0;">' + getNumeroSemana(cursor) + '</td>';
+                for (let d = 0; d < 7; d++) {
+                    let fStr = cursor.toISOString().split('T')[0];
+                    let isOther = cursor.getUTCMonth() !== mes;
+
+                    let bg = '#ffffff';
+                    let btStyle = '';
+                    let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
+                    if (festObj && !isOther) bg = bgFest[festObj.tipo] || bg;
+
+                    let estado = db.diasEspeciales[fStr];
+                    if (estado && !isOther) {
+                        btStyle = 'border-top:3px solid ' + (colEst[estado]||'#999') + ';';
                     }
-                    mHtml += '</tr>';
-                }
-                mHtml += '</table></td>';
-                mesesHtml += mHtml;
-            }
-            mesesHtml += '</tr>';
-        }
-        mesesHtml += '</table>';
 
-        // Leyenda
-        let leyHtml = '<table style="border-collapse:collapse;width:100%;font-size:7pt;margin-bottom:6pt;"><tr>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#10b981;margin-right:3pt;vertical-align:middle;"></span>Vacaciones</td>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#f59e0b;margin-right:3pt;vertical-align:middle;"></span>Exceso horas</td>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#ef4444;margin-right:3pt;vertical-align:middle;"></span>Baja médica</td>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#a855f7;margin-right:3pt;vertical-align:middle;"></span>Permiso</td>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#fee2e2;margin-right:3pt;vertical-align:middle;"></span>Festivo Nac.</td>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#dcfce7;margin-right:3pt;vertical-align:middle;"></span>Festivo Auton.</td>' +
-            '<td style="padding:2pt 6pt;border:1px solid #e2e8f0;"><span style="display:inline-block;width:8pt;height:8pt;background:#dbeafe;margin-right:3pt;vertical-align:middle;"></span>Festivo Local</td>' +
-            '</tr></table>';
+                    let turnos = db.turnosTecnicos[fStr];
+                    let numTxt = isOther
+                        ? '<span style="color:#d1d5db;font-size:7pt;">' + cursor.getUTCDate() + '</span>'
+                        : '<span style="font-size:8pt;font-weight:bold;color:#1e293b;">' + cursor.getUTCDate() + '</span>';
+                    let estTxt = (estado && !isOther)
+                        ? '<br><span style="font-size:6pt;font-weight:bold;color:' + (colEst[estado]||'#555') + ';">'
+                          + (lblEst[estado]||estado.toUpperCase()) + '</span>'
+                        : '';
+                    let trnTxt = (turnos && !isOther)
+                        ? '<br><span style="font-size:7pt;font-weight:bold;color:#1d4ed8;">'
+                          + Object.values(turnos).join(',') + '</span>'
+                        : '';
+
+                    let cellStyle = 'text-align:center;font-family:Calibri;padding:2px 1px;' +
+                        'border:1px solid #e2e8f0;background:' + bg + ';' + btStyle;
+
+                    h += '<td style="' + cellStyle + '">' + numTxt + estTxt + trnTxt + '</td>';
+                    cursor.setUTCDate(cursor.getUTCDate()+1);
+                }
+                h += '</tr>';
+            }
+            h += '</table>';
+            return h;
+        }
+
+        // 3 filas de 4 meses — cada fila es una tabla independiente con anchos fijos
+        // (tabla única con border-spacing causa desalineado en Excel)
+        let mesesHtml = '';
+        for (let fila = 0; fila < 3; fila++) {
+            mesesHtml += '<table width="100%" style="table-layout:fixed;border-collapse:collapse;margin-bottom:4px;"><tr>';
+            for (let col = 0; col < 4; col++) {
+                let mes = fila*4 + col;
+                let pad = col < 3 ? 'padding-right:4px;' : '';
+                mesesHtml += '<td width="25%" style="vertical-align:top;' + pad + '">' + miniMes(mes) + '</td>';
+            }
+            mesesHtml += '</tr></table>';
+        }
+
+        // Leyenda compacta
+        let items = [
+            {col:'#10b981',lbl:'Vacaciones'},
+            {col:'#f59e0b',lbl:'Exceso horas'},
+            {col:'#ef4444',lbl:'Baja m\u00E9dica'},
+            {col:'#a855f7',lbl:'Permiso'},
+            {col:'#fee2e2',lbl:'Fest. Nacional'},
+            {col:'#dcfce7',lbl:'Fest. Auton.'},
+            {col:'#dbeafe',lbl:'Fest. Local'}
+        ];
+        let leyHtml = '<table width="100%" style="border-collapse:collapse;margin-bottom:4px;"><tr>';
+        items.forEach(function(it) {
+            leyHtml += '<td style="padding:2px 5px;border:1px solid #e2e8f0;font-family:Calibri;font-size:7pt;white-space:nowrap;">' +
+                '<span style="display:inline-block;width:9px;height:9px;background:' + it.col + ';border:1px solid #94a3b8;margin-right:3px;vertical-align:middle;"></span>' +
+                it.lbl + '</td>';
+        });
+        leyHtml += '</tr></table>';
 
         // Festivos
-        let festivosHtml = '<h3 style="color:#1e3a8a;font-size:9pt;margin:4pt 0 2pt;">Festivos ' + año + ' · A Coru\u00F1a (Convenio Metal)</h3><table style="border-collapse:collapse;width:100%;font-size:7pt;"><tr><th style="background:#1e3a8a;color:#ffffff;padding:2pt 5pt;text-align:left;">Fecha</th><th style="background:#1e3a8a;color:#ffffff;padding:2pt 5pt;">Festivo</th><th style="background:#1e3a8a;color:#ffffff;padding:2pt 5pt;">Tipo</th></tr>';
-        let vistos2 = new Set();
+        let festHtml = '<p style="font-family:Calibri;font-size:9pt;font-weight:bold;color:#1e3a8a;margin:4px 0 2px;">Festivos ' + año + ' · A Coru\u00F1a (Convenio Metal)</p>' +
+            '<table width="100%" style="border-collapse:collapse;font-family:Calibri;font-size:8pt;">' +
+            '<tr><td style="background:#1e3a8a;color:#fff;padding:2px 6px;font-weight:bold;">Fecha</td>' +
+            '<td style="background:#1e3a8a;color:#fff;padding:2px 6px;font-weight:bold;">Festivo</td>' +
+            '<td style="background:#1e3a8a;color:#fff;padding:2px 6px;font-weight:bold;">Tipo</td></tr>';
+        let vistos = new Set();
         Object.keys(db.festivos).sort().forEach(function(key) {
             let obj = db.festivos[key];
-            let fecha = key.startsWith('-') ? (año + key) : key;
-            if (!fecha.startsWith(año.toString()) || vistos2.has(fecha)) return;
-            vistos2.add(fecha);
-            let p = fecha.split('-'); let dia = parseInt(p[2]); let m = parseInt(p[1]) - 1;
-            let col = { 'fest-nac': '#dc2626', 'fest-prov': '#16a34a', 'fest-loc': '#2563eb' };
-            let lbl = { 'fest-nac': 'Nacional', 'fest-prov': 'Auton\u00F3mico', 'fest-loc': 'Local' };
-            festivosHtml += '<tr><td style="padding:1pt 5pt;border:1px solid #e2e8f0;">' + dia + ' ' + mNom[m] + '</td><td style="padding:1pt 5pt;border:1px solid #e2e8f0;">' + (obj.nombre || key) + '</td><td style="padding:1pt 5pt;border:1px solid #e2e8f0;color:' + (col[obj.tipo] || '#374151') + ';font-weight:700;">' + (lbl[obj.tipo] || obj.tipo) + '</td></tr>';
+            let fecha = key.startsWith('-') ? (año+key) : key;
+            if (!fecha.startsWith(año+'') || vistos.has(fecha)) return;
+            vistos.add(fecha);
+            let p = fecha.split('-'); let dia = parseInt(p[2]); let m2 = parseInt(p[1])-1;
+            let colF = {'fest-nac':'#dc2626','fest-prov':'#16a34a','fest-loc':'#2563eb'};
+            let lblF = {'fest-nac':'Nacional','fest-prov':'Auton\u00F3mico','fest-loc':'Local'};
+            festHtml += '<tr>' +
+                '<td style="padding:1px 6px;border:1px solid #e2e8f0;">' + dia + ' ' + nm[m2] + '</td>' +
+                '<td style="padding:1px 6px;border:1px solid #e2e8f0;">' + (obj.nombre||key) + '</td>' +
+                '<td style="padding:1px 6px;border:1px solid #e2e8f0;color:' + (colF[obj.tipo]||'#374151') + ';font-weight:bold;">' + (lblF[obj.tipo]||obj.tipo) + '</td></tr>';
         });
-        festivosHtml += '</table>';
+        festHtml += '</table>';
 
-        return '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8">' +
-            '<xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Calendario ' + año + '</x:Name>' +
-            '<x:WorksheetOptions><x:Print><x:ValidPrinterInfo/><x:PaperSizeIndex>9</x:PaperSizeIndex><x:HorizontalResolution>600</x:HorizontalResolution><x:VerticalResolution>600</x:VerticalResolution></x:Print><x:Selected/><x:ProtectContents>False</x:ProtectContents><x:ProtectObjects>False</x:ProtectObjects><x:ProtectScenarios>False</x:ProtectScenarios></x:WorksheetOptions>' +
+        return '<!DOCTYPE html>' +
+            '<html xmlns:o="urn:schemas-microsoft-com:office:office"' +
+            ' xmlns:x="urn:schemas-microsoft-com:office:excel"' +
+            ' xmlns="http://www.w3.org/TR/REC-html40">' +
+            '<head><meta charset="utf-8">' +
+            '<xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>' +
+            '<x:Name>Calendario ' + año + '</x:Name>' +
+            '<x:WorksheetOptions><x:FitToPage/>' +
+            '<x:Print><x:ValidPrinterInfo/><x:Landscape/>' +
+            '<x:FitWidth>1</x:FitWidth><x:FitHeight>1</x:FitHeight>' +
+            '<x:PaperSizeIndex>9</x:PaperSizeIndex></x:Print>' +
+            '</x:WorksheetOptions>' +
             '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml>' +
-            '<style>body{font-family:Calibri,Arial,sans-serif;margin:0;}table{border-collapse:collapse;}td,th{mso-number-format:"@";}</style>' +
+            '<style>' +
+            '@page{size:A4 landscape;margin:8mm;}' +
+            'body{font-family:Calibri,Arial,sans-serif;font-size:8pt;margin:0;}' +
+            'td,th{mso-number-format:"@";}' +
+            '</style>' +
             '</head><body>' +
-            '<h1 style="color:#1e3a8a;font-size:14pt;margin:0 0 2pt;">CALENDARIO LABORAL ' + año + (tecnPrincipal ? ' · ' + tecnPrincipal : '') + '</h1>' +
-            '<p style="color:#64748b;font-size:8pt;margin:0 0 4pt;">Convenio Metal A Coru\u00F1a · Generado el ' + hoy + ' · Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (rest: ' + Math.max(0, db.config.vacTotales - cVac) + ') · Excesos: ' + cExc + '/' + db.config.excTotales + ' (rest: ' + Math.max(0, db.config.excTotales - cExc) + ')</p>' +
-            leyHtml + mesesHtml + festivosHtml + '</body></html>';
+            '<table width="100%" style="margin-bottom:3px;border-collapse:collapse;"><tr>' +
+            '<td style="font-family:Calibri;font-size:14pt;font-weight:bold;color:#1e3a8a;padding:0;">CALENDARIO LABORAL ' + año + (tecn?' · '+tecn:'') + '</td>' +
+            '<td style="text-align:right;font-family:Calibri;font-size:8pt;color:#64748b;vertical-align:bottom;padding:0;">Convenio Metal A Coruña · ' + hoy + ' · Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (rest: ' + Math.max(0,db.config.vacTotales-cVac) + ') · Excesos: ' + cExc + '/' + db.config.excTotales + ' (rest: ' + Math.max(0,db.config.excTotales-cExc) + ')</td>' +
+            '</tr></table>' +
+            leyHtml + mesesHtml + festHtml +
+            '</body></html>';
     }
 
-    // generarDocumentoWord — HTML descargable como .doc
+        // generarDocumentoWord — HTML descargable como .doc
     // ─────────────────────────────────────────────────────────────────
     function generarDocumentoWord(año) {
         let nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
