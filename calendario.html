@@ -721,6 +721,7 @@
 
     function save() {
         localStorage.setItem('metal_v8_db', JSON.stringify(db));
+        try { window.parent.postMessage({ type: 'HE_SYNC', action: 'cal-dirty' }, '*'); } catch(_e) {}
     }
 
     function cambiarMes(dir) {
