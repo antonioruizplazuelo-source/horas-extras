@@ -44,10 +44,10 @@
             padding: 0; 
             font-family: 'Segoe UI', sans-serif; 
             -webkit-tap-highlight-color: transparent;
+        }
+        button, .btn-mode, .btn-add-seq-item, .wk-column, .tec-item {
             user-select: none;
             -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
         }
         
         body { 
@@ -261,6 +261,31 @@
         .guia-texto ul { margin-left: 18px; margin-bottom: 8px; }
         .guia-texto p { font-size: 0.85rem; color: var(--text-main); line-height: 1.4; margin-bottom: 8px; }
         .guia-texto code { background: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+
+        /* ── Fullscreen calendar overlay ── */
+        #modal-cal-fullscreen { align-items: stretch; padding: 0; }
+        #modal-cal-fullscreen .modal-content { max-width: 100%; width: 100%; height: 100%; border-radius: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+        .fs-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--primary); color: #fff; gap: 12px; flex-wrap: wrap; }
+        .fs-header h2 { font-size: 1.2rem; font-weight: 800; text-transform: capitalize; margin: 0; }
+        .fs-counters { font-size: 0.78rem; opacity: 0.9; margin-top: 2px; }
+        .fs-nav { display: flex; align-items: center; gap: 6px; }
+        .fs-btn-nav { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff; padding: 7px 13px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 1rem; }
+        .fs-btn-nav:hover { background: rgba(255,255,255,0.35); }
+        .fs-select-ano { padding: 7px 10px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; outline: none; }
+        .fs-btn-close { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 700; }
+        .fs-grid-wrap { flex: 1; overflow: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+        .fs-grid { display: grid; grid-template-columns: 42px repeat(7, minmax(0, 1fr)); gap: 5px; min-width: 500px; }
+        .fs-grid .grid-header { text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+        .fs-grid .wk-column { background: #f8fafc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: var(--text-muted); font-weight: 700; border: 1px solid var(--border); }
+        .fs-grid .day-cell { min-height: 80px; }
+        @media (min-width: 600px) { .fs-grid .day-cell { min-height: 110px; } }
+        @media (min-width: 900px) { .fs-grid { min-width: 700px; } .fs-grid .day-cell { min-height: 130px; } }
+
+        /* ── Edit festivos ── */
+        .btn-edit-fest { background: none; border: none; color: var(--primary); font-size: 0.82rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+        .btn-edit-fest:hover { background: #eff6ff; }
+        .fest-sort-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+        .fest-sort-btn:hover { background: #f1f5f9; }
     </style>
 </head>
 <body>
@@ -354,6 +379,7 @@
             <div class="calendar-header">
                 <h1 id="mes-titulo">Junio 2026</h1>
                 <div class="nav-controls">
+                    <button class="btn-nav" id="btn-fullscreen-cal" title="Ver mes a pantalla completa" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-size:1rem;" onclick="abrirFullscreenCal()">⛶</button>
                     <select id="select-ano-global" class="select-ano">
                         <option value="2024">2024</option>
                         <option value="2025">2025</option>
@@ -500,6 +526,23 @@
                     <option value="perm">Permiso Retribuido</option>
                     <option value="fest">Marcado como Festivo Editable</option>
                 </select>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #fed7aa; padding: 12px; border-radius: 8px; background: #fff7ed; margin-top: 10px;">
+            <label style="font-weight:700; color:#ea580c; font-size:0.8rem;">🗓️ Festivo Oficial (opcional)</label>
+            <div class="modal-group" style="margin-top:5px;">
+                <label>Tipo de festivo</label>
+                <select id="modal-fest-tipo">
+                    <option value="">Sin festivo oficial</option>
+                    <option value="fest-nac">Nacional</option>
+                    <option value="fest-prov">Provincial / Autonómico</option>
+                    <option value="fest-loc">Local A Coruña</option>
+                </select>
+            </div>
+            <div class="modal-group" id="modal-fest-nombre-group" style="display:none;">
+                <label>Nombre del festivo</label>
+                <input type="text" id="modal-fest-nombre" placeholder="Ej: San Juan" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;">
             </div>
         </div>
 
@@ -860,6 +903,11 @@
             const tecActivo = document.getElementById('modal-tec-select').value;
             document.getElementById('modal-turno-select').value = (db.turnosTecnicos[fStr] && db.turnosTecnicos[fStr][tecActivo]) || "";
             
+            // Cargar festivo existente en el modal
+            let _mfExist = db.festivos[fStr];
+            document.getElementById('modal-fest-tipo').value = _mfExist ? (_mfExist.tipo || '') : '';
+            document.getElementById('modal-fest-nombre').value = _mfExist ? (_mfExist.nombre || '') : '';
+            document.getElementById('modal-fest-nombre-group').style.display = _mfExist ? 'block' : 'none';
             document.getElementById('modal-dia').style.display = 'flex';
         }
     }
@@ -876,6 +924,15 @@
         if(!db.turnosTecnicos[diaSeleccionadoClave]) db.turnosTecnicos[diaSeleccionadoClave] = {};
         if(turno) db.turnosTecnicos[diaSeleccionadoClave][tec] = turno;
         else if(db.turnosTecnicos[diaSeleccionadoClave]) delete db.turnosTecnicos[diaSeleccionadoClave][tec];
+
+        // Festivo desde modal
+        let _festTipo = document.getElementById('modal-fest-tipo').value;
+        let _festNom  = document.getElementById('modal-fest-nombre').value.trim();
+        if (_festTipo && _festNom) {
+            db.festivos[diaSeleccionadoClave] = { tipo: _festTipo, nombre: _festNom };
+        } else if (!_festTipo && db.festivos[diaSeleccionadoClave]) {
+            delete db.festivos[diaSeleccionadoClave];
+        }
 
         save();
         document.getElementById('modal-dia').style.display = 'none';
@@ -1255,7 +1312,7 @@
                 let festObj = db.festivos[fStr] || db.festivos[fStr.substring(4)];
                 if (festObj && !isOther) {
                     bg = bgFest[festObj.tipo] || bg;
-                    festNom = festObj.nombre ? festObj.nombre.substring(0, 6) : '';
+                    festNom = festObj.nombre ? festObj.nombre.substring(0, 11) : '';
                 }
                 let estado = db.diasEspeciales[fStr];
                 if (estado && !isOther) {
@@ -1267,25 +1324,26 @@
 
                 let cell = document.createElement('div');
                 cell.style.cssText =
-                    'min-height:22px;height:26px;padding:1px;background:' + bg +
+                    'min-height:28px;height:34px;padding:2px 1px 1px;background:' + bg +
                     ';border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;' +
                     'border-top:3px solid ' + (isOther ? 'transparent' : brdTop) +
-                    ';display:flex;flex-direction:column;align-items:center;justify-content:flex-start;' +
+                    ';display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;' +
                     'overflow:hidden;opacity:' + (isOther ? '0.25' : '1') + ';';
 
                 let num = document.createElement('div');
-                num.style.cssText = 'font-size:9px;font-weight:700;color:' + (isOther ? '#cbd5e1' : '#1e293b') + ';line-height:1;';
+                num.style.cssText = 'font-size:8px;font-weight:700;color:' + (isOther ? '#cbd5e1' : '#1e293b') + ';line-height:1.1;flex-shrink:0;';
                 num.textContent = cursor.getUTCDate();
                 cell.appendChild(num);
 
                 if (turnoTxt) {
                     let t = document.createElement('div');
-                    t.style.cssText = 'font-size:8px;font-weight:900;color:#1d4ed8;line-height:1;white-space:nowrap;background:#eff6ff;border-radius:2px;padding:0 1px;';
+                    t.style.cssText = 'font-size:7.5px;font-weight:800;color:#1d4ed8;line-height:1.1;white-space:nowrap;flex-shrink:0;';
                     t.textContent = turnoTxt;
                     cell.appendChild(t);
-                } else if (festNom) {
+                }
+                if (festNom) {
                     let fn = document.createElement('div');
-                    fn.style.cssText = 'font-size:6.5px;color:#374151;line-height:1;overflow:hidden;white-space:nowrap;max-width:100%;';
+                    fn.style.cssText = 'font-size:6px;color:#374151;line-height:1;overflow:hidden;white-space:nowrap;max-width:100%;flex-shrink:0;';
                     fn.textContent = festNom;
                     cell.appendChild(fn);
                 }
@@ -1629,7 +1687,7 @@
         let mes = fechaActual.getMonth();
 
         let nombresMeses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-        titulo.innerText = `${nombresMeses[mes]} ${año}`;
+        titulo.textContent = `${nombresMeses[mes]} ${año}`;
         document.getElementById('select-ano-global').value = año;
 
         grid.innerHTML = '';
@@ -1656,13 +1714,24 @@
             }
         });
 
-        document.getElementById('top-vac-disp').innerText = cVac;
+           document.getElementById('top-vac-disp').innerText = cVac;
         document.getElementById('vac-restantes').innerText = Math.max(0, db.config.vacTotales - cVac);
         document.getElementById('top-vac-rest').innerText = Math.max(0, db.config.vacTotales - cVac);
-        
+
         document.getElementById('top-exc-disp').innerText = cExc;
         document.getElementById('exc-restantes').innerText = Math.max(0, db.config.excTotales - cExc);
         document.getElementById('top-exc-rest').innerText = Math.max(0, db.config.excTotales - cExc);
+        // Actualizar subítulo de contadores en el encabezado del calendario
+        let _vacR = Math.max(0, db.config.vacTotales - cVac);
+        let _excR = Math.max(0, db.config.excTotales - cExc);
+        let _ctSub = document.getElementById('cal-header-counters');
+        if (!_ctSub) {
+            _ctSub = document.createElement('small');
+            _ctSub.id = 'cal-header-counters';
+            _ctSub.style.cssText = 'display:block;font-size:0.72rem;font-weight:600;color:var(--text-muted);margin-top:2px;';
+            titulo.parentNode.insertBefore(_ctSub, titulo.nextSibling);
+        }
+        _ctSub.textContent = `Vacaciones: ${cVac}/${db.config.vacTotales} (quedan ${_vacR}) · Exceso: ${cExc}/${db.config.excTotales} (quedan ${_excR})`;
 
         let mapaTextos = { 'vaca': 'Vacaciones', 'exc': 'Exceso Horas', 'med': 'Baja Médica', 'perm': 'Permiso', 'fest': 'Festivo Edit' };
 
@@ -1761,12 +1830,15 @@
                 festivosEncontrados++;
                 let fObj = db.festivos[clave];
                 listaFestivosInline.innerHTML += `
-                    <div class="festivo-inline-card ${fObj.tipo}">
-                        <div>
+                    <div class="festivo-inline-card ${fObj.tipo}" data-clave="${clave}">
+                        <div style="flex:1;">
                             <span style="font-size:0.75rem; opacity:0.8;">[${nombresTipos[fObj.tipo]}]</span><br>
                             <strong>${fechaFormateada.split('-').reverse().join('/')}</strong> - ${nombreMostrar}
                         </div>
-                        <button class="btn-del-fest-inline" onclick="eliminarFestivoInline('${clave}')" title="Borrar festivo">&times;</button>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            <button class="btn-edit-fest" onclick="editarFestivoInline('${clave}')" title="Editar">✏️</button>
+                            <button class="btn-del-fest-inline" onclick="eliminarFestivoInline('${clave}')" title="Borrar festivo">&times;</button>
+                        </div>
                     </div>
                 `;
             }
@@ -2135,5 +2207,172 @@
     </div>
   </div>
 </div>
+<div class="modal" id="modal-cal-fullscreen">
+    <div class="modal-content">
+        <div class="fs-header">
+            <div>
+                <h2 id="fs-mes-titulo">Junio 2026</h2>
+                <div class="fs-counters" id="fs-counters"></div>
+            </div>
+            <div class="fs-nav">
+                <select id="fs-select-ano" class="fs-select-ano"></select>
+                <button class="fs-btn-nav" id="fs-btn-prev">&#8249;</button>
+                <button class="fs-btn-nav" id="fs-btn-next">&#8250;</button>
+                <button class="fs-btn-close" onclick="cerrarFullscreenCal()">✕</button>
+            </div>
+        </div>
+        <div class="fs-grid-wrap">
+            <div class="fs-grid" id="fs-grid-calendario"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Mostrar/ocultar campo nombre festivo en modal-dia ──
+document.getElementById('modal-fest-tipo').addEventListener('change', function() {
+    document.getElementById('modal-fest-nombre-group').style.display = this.value ? 'block' : 'none';
+});
+
+// ── Editar festivo desde la lista ──
+window.editarFestivoInline = function(clave) {
+    let f = db.festivos[clave];
+    if (!f) return;
+    document.getElementById('add-fest-fecha').value = clave.startsWith('-') ? (fechaActual.getFullYear() + clave) : clave;
+    document.getElementById('add-fest-nombre').value = f.nombre || '';
+    document.getElementById('add-fest-tipo').value = f.tipo || 'fest-nac';
+    // Borrar el antiguo antes de guardar el nuevo
+    window._editandoFestivoClave = clave;
+    document.getElementById('add-fest-fecha').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('add-fest-nombre').focus();
+};
+
+// Sobrescribir añadirFestivoInline para manejar edición
+const _origAñadirFestivo = añadirFestivoInline;
+añadirFestivoInline = function() {
+    let f = document.getElementById('add-fest-fecha').value;
+    let n = document.getElementById('add-fest-nombre').value.trim();
+    let t = document.getElementById('add-fest-tipo').value;
+    if(!f || !n) return alert("Pon fecha y nombre.");
+    // Si estaba editando, eliminar el anterior
+    if (window._editandoFestivoClave && window._editandoFestivoClave !== f) {
+        delete db.festivos[window._editandoFestivoClave];
+    }
+    window._editandoFestivoClave = null;
+    db.festivos[f] = { tipo: t, nombre: n };
+    document.getElementById('add-fest-nombre').value = '';
+    save();
+    render();
+};
+
+// ── Fullscreen calendar ──
+window.abrirFullscreenCal = function() {
+    document.getElementById('modal-cal-fullscreen').style.display = 'flex';
+    // Poblar selector de año
+    let sel = document.getElementById('fs-select-ano');
+    sel.innerHTML = '';
+    [2024,2025,2026,2027,2028].forEach(y => {
+        let o = document.createElement('option');
+        o.value = y; o.textContent = y;
+        if (y === fechaActual.getFullYear()) o.selected = true;
+        sel.appendChild(o);
+    });
+    renderFullscreenCal();
+};
+window.cerrarFullscreenCal = function() {
+    document.getElementById('modal-cal-fullscreen').style.display = 'none';
+};
+document.getElementById('modal-cal-fullscreen').addEventListener('click', function(e) {
+    if (e.target === this) cerrarFullscreenCal();
+});
+document.getElementById('fs-btn-prev').addEventListener('click', function() {
+    fechaActual.setMonth(fechaActual.getMonth() - 1);
+    document.getElementById('fs-select-ano').value = fechaActual.getFullYear();
+    renderFullscreenCal(); render();
+});
+document.getElementById('fs-btn-next').addEventListener('click', function() {
+    fechaActual.setMonth(fechaActual.getMonth() + 1);
+    document.getElementById('fs-select-ano').value = fechaActual.getFullYear();
+    renderFullscreenCal(); render();
+});
+document.getElementById('fs-select-ano').addEventListener('change', function() {
+    fechaActual.setFullYear(parseInt(this.value));
+    renderFullscreenCal(); render();
+});
+
+function renderFullscreenCal() {
+    let año = fechaActual.getFullYear();
+    let mes  = fechaActual.getMonth();
+    let nombresMeses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    document.getElementById('fs-mes-titulo').textContent = nombresMeses[mes] + ' ' + año;
+
+    // Contadores
+    let cVac = 0, cExc = 0;
+    Object.keys(db.diasEspeciales).forEach(k => {
+        if (k.startsWith(año+'')) {
+            if (db.diasEspeciales[k] === 'vaca') cVac++;
+            if (db.diasEspeciales[k] === 'exc')  cExc++;
+        }
+    });
+    let vRest = Math.max(0, db.config.vacTotales - cVac);
+    let eRest = Math.max(0, db.config.excTotales - cExc);
+    document.getElementById('fs-counters').textContent =
+        'Vacaciones: ' + cVac + '/' + db.config.vacTotales + ' (quedan ' + vRest + ')  ·  Exceso: ' + cExc + '/' + db.config.excTotales + ' (quedan ' + eRest + ')';
+
+    let grid = document.getElementById('fs-grid-calendario');
+    grid.innerHTML = '';
+    ["Sem","Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].forEach(label => {
+        let hd = document.createElement('div'); hd.className = 'grid-header'; hd.textContent = label; grid.appendChild(hd);
+    });
+
+    let primerDia = new Date(Date.UTC(año, mes, 1));
+    let inicio = primerDia.getUTCDay() || 7;
+    let cursor = new Date(Date.UTC(año, mes, 1));
+    cursor.setUTCDate(cursor.getUTCDate() - (inicio - 1));
+
+    let mapaTextos = { 'vaca': 'Vacaciones', 'exc': 'Exceso Horas', 'med': 'Baja Médica', 'perm': 'Permiso', 'fest': 'Festivo Edit' };
+    let hoy = new Date(); let todayStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+
+    for (let f = 0; f < 6; f++) {
+        if (f > 0 && cursor.getUTCFullYear() === año && cursor.getUTCMonth() > mes) break;
+        let numSem = getNumeroSemana(cursor);
+        let wk = document.createElement('div'); wk.className = 'wk-column'; wk.textContent = numSem; grid.appendChild(wk);
+
+        for (let d = 0; d < 7; d++) {
+            let cell = document.createElement('div'); cell.className = 'day-cell';
+            let fStr = cursor.toISOString().split('T')[0];
+            let sufijoAnual = fStr.substring(4);
+            if (cursor.getUTCMonth() !== mes) cell.classList.add('other-month');
+            if (fStr === todayStr) cell.classList.add('today-highlight');
+            cell.innerHTML = '<span class="day-num">' + cursor.getUTCDate() + '</span>';
+
+            if (db.festivos[fStr] || db.festivos[sufijoAnual]) {
+                let fObj = db.festivos[fStr] || db.festivos[sufijoAnual];
+                cell.classList.add(fObj.tipo);
+                if (fObj.nombre) cell.innerHTML += '<span class="fest-name-tag">' + fObj.nombre + '</span>';
+            }
+            let estado = db.diasEspeciales[fStr];
+            if (estado) {
+                cell.classList.add(estado);
+                cell.innerHTML += '<span class="estado-text-tag">' + (mapaTextos[estado] || estado) + '</span>';
+            }
+            let turnos = db.turnosTecnicos[fStr];
+            if (turnos && Object.keys(turnos).length > 0) {
+                let ctt = document.createElement('div'); ctt.className = 'container-turnos-tecnicos';
+                Object.entries(turnos).forEach(function(entry) {
+                    let tec = entry[0], trn = entry[1];
+                    let tag = document.createElement('div');
+                    tag.className = 'tecnico-tag t-' + trn;
+                    tag.innerHTML = '<span>' + tec + '</span><span>' + trn + '</span>';
+                    ctt.appendChild(tag);
+                });
+                cell.appendChild(ctt);
+            }
+            cell.addEventListener('click', function() { gestionarClicDia(fStr, cell); });
+            grid.appendChild(cell);
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+        }
+    }
+}
+</script>
 </body>
 </html>
