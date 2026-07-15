@@ -975,8 +975,10 @@
 
     window.eliminarFestivoInline = function(clave) {
         delete db.festivos[clave];
+        if (db.festivosOrden) db.festivosOrden = db.festivosOrden.filter(k => k !== clave);
         save();
         render();
+        actualizarTablasVisuales();
     }
 
     /* EXPORTACIÓN */
@@ -1818,7 +1820,12 @@
         let festivosEncontrados = 0;
         let nombresTipos = { 'fest-nac': 'Nacional', 'fest-prov': 'Provincial', 'fest-loc': 'Local' };
 
-        Object.keys(db.festivos).sort().forEach(clave => {
+        // Usar orden personalizado; si no existe, ordenar por fecha
+        let _festOrden = (db.festivosOrden && db.festivosOrden.length)
+            ? db.festivosOrden.filter(k => db.festivos[k])
+            : Object.keys(db.festivos).sort();
+        Object.keys(db.festivos).forEach(k => { if (!_festOrden.includes(k)) _festOrden.push(k); });
+        _festOrden.forEach(clave => {
             let aplica = false;
             let fechaFormateada = "";
             let nombreMostrar = db.festivos[clave].nombre;
@@ -1833,16 +1840,19 @@
                 festivosEncontrados++;
                 let fObj = db.festivos[clave];
                 listaFestivosInline.innerHTML += `
-                    <div class="festivo-inline-card ${fObj.tipo}" data-clave="${clave}">
+                    <div class="festivo-inline-card ${fObj.tipo}" data-clave="${clave}"
+                         draggable="true"
+                         ondragstart="festDragStart(event,'${clave}')"
+                         ondragover="festDragOver(event)"
+                         ondrop="festDrop(event,'${clave}')"
+                         ondragleave="this.style.outline=''"
+                         style="cursor:grab;">
+                        <span style="color:#94a3b8;font-size:1.1rem;padding-right:6px;cursor:grab;flex-shrink:0;" title="Arrastra para reordenar">⠿</span>
                         <div style="flex:1;">
                             <span style="font-size:0.75rem; opacity:0.8;">[${nombresTipos[fObj.tipo]}]</span><br>
                             <strong>${fechaFormateada.split('-').reverse().join('/')}</strong> - ${nombreMostrar}
                         </div>
                         <div style="display:flex;align-items:center;gap:4px;">
-                            <div style="display:flex;flex-direction:column;gap:2px;">
-                                <button class="fest-sort-btn" onclick="moverFestivo('${clave}',-1)" title="Subir">▲</button>
-                                <button class="fest-sort-btn" onclick="moverFestivo('${clave}',1)" title="Bajar">▼</button>
-                            </div>
                             <button class="btn-edit-fest" onclick="editarFestivoInline('${clave}')" title="Editar">✏️</button>
                             <button class="btn-del-fest-inline" onclick="eliminarFestivoInline('${clave}')" title="Borrar festivo">&times;</button>
                         </div>
@@ -2253,33 +2263,53 @@ window.editarFestivoInline = function(clave) {
     document.getElementById('add-fest-nombre').focus();
 };
 
-// Ordenar festivos por fecha
+// Helper: inicializar/sincronizar db.festivosOrden
+function _initOrden() {
+    if (!db.festivosOrden) db.festivosOrden = Object.keys(db.festivos);
+    // Añadir claves que falten
+    Object.keys(db.festivos).forEach(function(k) {
+        if (!db.festivosOrden.includes(k)) db.festivosOrden.push(k);
+    });
+    // Quitar claves que ya no existan
+    db.festivosOrden = db.festivosOrden.filter(function(k) { return !!db.festivos[k]; });
+}
+
+// Ordenar festivos por fecha (actualiza el array de orden)
 window.ordenarFestivosPorFecha = function() {
-    let claves = Object.keys(db.festivos);
+    _initOrden();
     let año = fechaActual.getFullYear();
-    claves.sort(function(a, b) {
+    db.festivosOrden.sort(function(a, b) {
         let fa = a.startsWith('-') ? (año + a) : a;
         let fb = b.startsWith('-') ? (año + b) : b;
         return fa.localeCompare(fb);
     });
-    let nuevoObj = {};
-    claves.forEach(function(k) { nuevoObj[k] = db.festivos[k]; });
-    db.festivos = nuevoObj;
     save(); actualizarTablasVisuales();
 };
 
-// Mover festivo arriba (-1) o abajo (+1) en el orden de inserción
-window.moverFestivo = function(clave, dir) {
-    let claves = Object.keys(db.festivos);
-    let idx = claves.indexOf(clave);
-    if (idx < 0) return;
-    let swap = idx + dir;
-    if (swap < 0 || swap >= claves.length) return;
-    // Intercambiar posiciones reordenando el objeto
-    let tmp = claves[idx]; claves[idx] = claves[swap]; claves[swap] = tmp;
-    let nuevoObj = {};
-    claves.forEach(function(k) { nuevoObj[k] = db.festivos[k]; });
-    db.festivos = nuevoObj;
+// Drag & drop de festivos
+let _festDragSrc = null;
+window.festDragStart = function(e, clave) {
+    _festDragSrc = clave;
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.style.opacity = '0.5';
+};
+window.festDragOver = function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.style.outline = '2px dashed #2563eb';
+};
+window.festDrop = function(e, targetClave) {
+    e.preventDefault();
+    e.currentTarget.style.outline = '';
+    if (!_festDragSrc || _festDragSrc === targetClave) { _festDragSrc = null; return; }
+    _initOrden();
+    let arr = db.festivosOrden;
+    let fromIdx = arr.indexOf(_festDragSrc);
+    let toIdx   = arr.indexOf(targetClave);
+    if (fromIdx < 0 || toIdx < 0) { _festDragSrc = null; return; }
+    arr.splice(fromIdx, 1);
+    arr.splice(toIdx, 0, _festDragSrc);
+    _festDragSrc = null;
     save(); actualizarTablasVisuales();
 };
 
@@ -2296,9 +2326,12 @@ añadirFestivoInline = function() {
     }
     window._editandoFestivoClave = null;
     db.festivos[f] = { tipo: t, nombre: n };
+    if (!db.festivosOrden) db.festivosOrden = Object.keys(db.festivos);
+    else if (!db.festivosOrden.includes(f)) db.festivosOrden.push(f);
     document.getElementById('add-fest-nombre').value = '';
     save();
     render();
+    actualizarTablasVisuales();
 };
 
 // ── Fullscreen calendar ──
