@@ -446,7 +446,10 @@
                 <button class="btn-action" id="btn-guardar-manual" style="width:auto; margin-top:12px; padding:8px 16px; font-size:0.82rem; background:#10b981;">Guardar Datos del Grupo Seleccionado</button>
 
                 <div class="festivos-manager-block">
-                    <h5 style="font-size:0.88rem; color:var(--text-main); margin-bottom:4px;">📆 Festivos Oficiales Reconocidos para este Año</h5>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
+                        <h5 style="font-size:0.88rem; color:var(--text-main); margin:0;">📆 Festivos Oficiales Reconocidos para este Año</h5>
+                        <button onclick="ordenarFestivosPorFecha()" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:5px 12px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;">📅 Ordenar por fecha</button>
+                    </div>
                     <p style="font-size:0.75rem; color:var(--text-muted);">Añade o elimina los días reconocidos del calendario laboral de A Coruña:</p>
                     
                     <div class="festivos-inline-list" id="lista-festivos-inline"></div>
@@ -904,7 +907,7 @@
             document.getElementById('modal-turno-select').value = (db.turnosTecnicos[fStr] && db.turnosTecnicos[fStr][tecActivo]) || "";
             
             // Cargar festivo existente en el modal
-            let _mfExist = db.festivos[fStr];
+            let _mfExist = db.festivos[fStr] || db.festivos[fStr.substring(4)];
             document.getElementById('modal-fest-tipo').value = _mfExist ? (_mfExist.tipo || '') : '';
             document.getElementById('modal-fest-nombre').value = _mfExist ? (_mfExist.nombre || '') : '';
             document.getElementById('modal-fest-nombre-group').style.display = _mfExist ? 'block' : 'none';
@@ -1836,6 +1839,10 @@
                             <strong>${fechaFormateada.split('-').reverse().join('/')}</strong> - ${nombreMostrar}
                         </div>
                         <div style="display:flex;align-items:center;gap:4px;">
+                            <div style="display:flex;flex-direction:column;gap:2px;">
+                                <button class="fest-sort-btn" onclick="moverFestivo('${clave}',-1)" title="Subir">▲</button>
+                                <button class="fest-sort-btn" onclick="moverFestivo('${clave}',1)" title="Bajar">▼</button>
+                            </div>
                             <button class="btn-edit-fest" onclick="editarFestivoInline('${clave}')" title="Editar">✏️</button>
                             <button class="btn-del-fest-inline" onclick="eliminarFestivoInline('${clave}')" title="Borrar festivo">&times;</button>
                         </div>
@@ -2244,6 +2251,36 @@ window.editarFestivoInline = function(clave) {
     window._editandoFestivoClave = clave;
     document.getElementById('add-fest-fecha').scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('add-fest-nombre').focus();
+};
+
+// Ordenar festivos por fecha
+window.ordenarFestivosPorFecha = function() {
+    let claves = Object.keys(db.festivos);
+    let año = fechaActual.getFullYear();
+    claves.sort(function(a, b) {
+        let fa = a.startsWith('-') ? (año + a) : a;
+        let fb = b.startsWith('-') ? (año + b) : b;
+        return fa.localeCompare(fb);
+    });
+    let nuevoObj = {};
+    claves.forEach(function(k) { nuevoObj[k] = db.festivos[k]; });
+    db.festivos = nuevoObj;
+    save(); actualizarTablasVisuales();
+};
+
+// Mover festivo arriba (-1) o abajo (+1) en el orden de inserción
+window.moverFestivo = function(clave, dir) {
+    let claves = Object.keys(db.festivos);
+    let idx = claves.indexOf(clave);
+    if (idx < 0) return;
+    let swap = idx + dir;
+    if (swap < 0 || swap >= claves.length) return;
+    // Intercambiar posiciones reordenando el objeto
+    let tmp = claves[idx]; claves[idx] = claves[swap]; claves[swap] = tmp;
+    let nuevoObj = {};
+    claves.forEach(function(k) { nuevoObj[k] = db.festivos[k]; });
+    db.festivos = nuevoObj;
+    save(); actualizarTablasVisuales();
 };
 
 // Sobrescribir añadirFestivoInline para manejar edición
